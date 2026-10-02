@@ -437,7 +437,11 @@ def dashboard():
         progress = round(len(completed) / len(tasks) * 100) if tasks else 0
 
         study = db_query(
-            "SELECT COALESCE(SUM(minutes),0) AS minutes FROM study_sessions WHERE user_id=%s",
+            """
+            SELECT COALESCE(SUM(completed_minutes),0) AS minutes
+            FROM study_sessions
+            WHERE student_id=%s
+            """,
             (user_id,), fetch=True, one=True,
         )
         stats = {
@@ -812,11 +816,11 @@ def class_detail(class_id):
     try:
         content = db_query(
             """
-            SELECT cc.id, cc.class_id, cc.author_id,
-              cc.content_type, cc.title, cc.body, cc.due_date,
+            SELECT cc.id, cc.class_id, cc.teacher_id AS author_id,
+              cc.kind AS content_type, cc.title, cc.body, cc.event_date AS due_date,
               cc.created_at, u.name AS author_name
             FROM class_content cc
-            LEFT JOIN users u ON u.id=cc.author_id
+            LEFT JOIN users u ON u.id=cc.teacher_id
             WHERE cc.class_id=%s
             ORDER BY cc.created_at DESC, cc.id DESC
             """,
@@ -888,7 +892,7 @@ def create_class_content(class_id):
         row = db_query(
             """
             INSERT INTO class_content
-            (class_id, author_id, content_type, title, body, due_date)
+            (class_id, teacher_id, kind, title, body, event_date)
             VALUES (%s,%s,%s,%s,%s,%s)
             RETURNING *
             """,
@@ -914,9 +918,11 @@ def get_study_sessions():
     try:
         rows = db_query(
             """
-            SELECT id, user_id, task_id, exam_id, session_date, minutes, notes, created_at
+            SELECT id, student_id, task_id, exam_id, session_date,
+                   planned_minutes, completed_minutes, notes, created_at,
+                   completed_minutes AS minutes
             FROM study_sessions
-            WHERE user_id=%s
+            WHERE student_id=%s
             ORDER BY session_date DESC, id DESC
             LIMIT 200
             """,
@@ -940,11 +946,12 @@ def create_study_session():
         row = db_query(
             """
             INSERT INTO study_sessions
-            (user_id, task_id, exam_id, session_date, minutes, notes)
-            VALUES (%s,%s,%s,%s,%s,%s)
+            (student_id, task_id, exam_id, session_date, planned_minutes, completed_minutes, notes)
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
             RETURNING *
             """,
-            (session["user_id"], data.get("task_id"), data.get("exam_id"), session_date, minutes, notes),
+            (session["user_id"], data.get("task_id"), data.get("exam_id"), session_date,
+             safe_int(data.get("planned_minutes", minutes), minutes, 0), minutes, notes),
             fetch=True, one=True,
         )
         log_activity("study_session", f"{minutes} minuts")
@@ -973,16 +980,23 @@ def progress():
         )
         study = db_query(
             """
-            SELECT COALESCE(SUM(minutes),0) AS minutes
-            FROM study_sessions WHERE user_id=%s
+            SELECT
+                COALESCE(SUM(planned_minutes),0) AS planned_minutes,
+                COALESCE(SUM(completed_minutes),0) AS completed_minutes
+            FROM study_sessions
+            WHERE student_id=%s
             """,
             (user_id,), fetch=True, one=True,
         )
         weekly = db_query(
             """
-            SELECT session_date, COALESCE(SUM(minutes),0) AS minutes
+            SELECT
+                session_date,
+                COALESCE(SUM(planned_minutes),0) AS planned_minutes,
+                COALESCE(SUM(completed_minutes),0) AS completed_minutes,
+                COALESCE(SUM(completed_minutes),0) AS minutes
             FROM study_sessions
-            WHERE user_id=%s
+            WHERE student_id=%s
               AND session_date >= CURRENT_DATE - INTERVAL '6 days'
             GROUP BY session_date
             ORDER BY session_date
@@ -1001,16 +1015,17 @@ def progress():
         total = int(tasks["total"] or 0)
         completed = int(tasks["completed"] or 0)
         percentage = round(completed / total * 100) if total else 0
-        minutes = int(study["minutes"] or 0)
+        planned_minutes = int(study["planned_minutes"] or 0)
+        completed_minutes = int(study["completed_minutes"] or 0)
 
         return jsonify({
             "ok": True,
             "progress": percentage,
             "total_tasks": total,
             "completed_tasks": completed,
-            "study_minutes": minutes,
+            "study_minutes": completed_minutes,
             "tasks": {"total": total, "completed": completed},
-            "study": {"planned": minutes, "completed": minutes},
+            "study": {"planned": planned_minutes, "completed": completed_minutes},
             "tests": {
                 "count": int(test_stats["tests"] or 0),
                 "average": round(float(test_stats["average"] or 0), 1),
