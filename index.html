@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="ca"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MiniClassroom</title><link rel="stylesheet" href="{{ url_for('static',filename='style.css') }}"></head>
+<body><header><b>MiniClassroom</b><span id="status"></span></header>
+<main>
+<section id="auth" class="card"><h1>MiniClassroom</h1><p>Organitza el teu estudi, tasques i exàmens.</p>
+<div class="cols"><form id="login"><h2>Entrar</h2><input name="email" type="email" placeholder="Correu" required><input name="password" type="password" placeholder="Contrasenya" required><button>Entrar</button></form>
+<form id="register"><h2>Crear compte</h2><input name="name" placeholder="Nom" required><input name="email" type="email" placeholder="Correu" required><input name="password" type="password" placeholder="Contrasenya (mín. 6)" required><select name="role"><option value="student">Alumne</option><option value="teacher">Professor</option></select><button>Registrar-me</button></form></div><p id="error"></p></section>
+<section id="app" hidden><div class="card hero"><div><small>MiniClassroom</small><h1 id="hello"></h1><p id="info"></p></div><button id="logout">Tancar sessió</button></div>
+<div class="cols"><section class="card"><h2>Tasques</h2><form id="task"><input name="name" placeholder="Nom" required><input name="subject" placeholder="Assignatura" required><input name="due_date" type="date"><input name="estimated_minutes" type="number" value="30"><select name="difficulty"><option>baixa</option><option selected>mitjana</option><option>alta</option></select><button>Afegir</button></form><div id="tasks"></div></section>
+<section class="card"><h2>Exàmens</h2><form id="exam"><input name="subject" placeholder="Assignatura" required><input name="exam_date" type="date" required><input name="study_minutes" type="number" value="120"><input name="syllabus" placeholder="Temari"><select name="difficulty"><option>baixa</option><option selected>mitjana</option><option>alta</option></select><button>Afegir</button></form><div id="exams"></div></section></div>
+<section class="card"><h2>Assistent d'IA</h2><div class="modes"><button data-mode="dubte">DUBTE</button><button data-mode="explicar">EXPLICAR</button><button data-mode="estudiar">ESTUDIAR</button><button data-mode="resumir">RESUMIR</button><button data-mode="test">TEST</button></div><textarea id="question" rows="4" placeholder="Escriu el teu dubte..."></textarea><button id="ask">Preguntar</button><pre id="answer"></pre></section>
+<section id="teacher" class="card" hidden><h2>Classes</h2><form id="newclass"><input name="name" placeholder="Nom de la classe" required><button>Crear classe</button></form><p id="classresult"></p></section>
+<section id="student" class="card" hidden><h2>Unir-se a una classe</h2><form id="join"><input name="code" maxlength="6" placeholder="Codi de 6 caràcters" required><button>Unir-me</button></form></section>
+</section></main><script src="{{ url_for('static',filename='app.js') }}"></script></body></html>

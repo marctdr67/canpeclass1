@@ -1,0 +1,16 @@
+const $=s=>document.querySelector(s);let mode="dubte";
+const esc=x=>String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+async function api(u,o={}){const r=await fetch(u,{...o,headers:{"Content-Type":"application/json",...(o.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Error");return d}
+function showError(e){$("#error").textContent=e.message}
+async function load(){try{const m=await api("/api/me");if(!m.user){$("#auth").hidden=false;$("#app").hidden=true;return}$("#auth").hidden=true;$("#app").hidden=false;$("#hello").textContent=`Hola, ${m.user.name}!`;$("#teacher").hidden=m.user.role!=="teacher";$("#student").hidden=m.user.role!=="student";const d=await api("/api/dashboard");$("#info").textContent=`${d.tasks.filter(x=>x.status!=="completada").length} tasques pendents · ${d.exams.length} exàmens`;$("#tasks").innerHTML=d.tasks.map(t=>`<div class="item"><b>${esc(t.name)}</b> · ${esc(t.subject)}<br><small>${t.due_date||"Sense data"} · ${t.estimated_minutes} min · ${esc(t.status)}</small><br><button onclick="done(${t.id})">Completar</button></div>`).join("")||"<p>Cap tasca.</p>";$("#exams").innerHTML=d.exams.map(e=>`<div class="item"><b>${esc(e.subject)}</b><br><small>${e.exam_date} · ${e.study_minutes} min</small><br>${esc(e.syllabus||"")}</div>`).join("")||"<p>Cap examen.</p>"}catch(e){showError(e)}}
+async function done(id){await api("/api/tasks/"+id,{method:"PATCH",body:JSON.stringify({status:"completada"})});load()}
+$("#login").onsubmit=async e=>{e.preventDefault();try{await api("/api/login",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});load()}catch(x){showError(x)}};
+$("#register").onsubmit=async e=>{e.preventDefault();try{await api("/api/register",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});load()}catch(x){showError(x)}};
+$("#logout").onclick=async()=>{await api("/api/logout",{method:"POST"});load()};
+$("#task").onsubmit=async e=>{e.preventDefault();try{await api("/api/tasks",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});e.target.reset();load()}catch(x){showError(x)}};
+$("#exam").onsubmit=async e=>{e.preventDefault();try{await api("/api/exams",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});e.target.reset();load()}catch(x){showError(x)}};
+$("#newclass").onsubmit=async e=>{e.preventDefault();try{const d=await api("/api/classes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});$("#classresult").textContent="Codi de classe: "+d.class.code;e.target.reset()}catch(x){showError(x)}};
+$("#join").onsubmit=async e=>{e.preventDefault();try{await api("/api/classes/join",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});e.target.reset();load()}catch(x){showError(x)}};
+document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{mode=b.dataset.mode});
+$("#ask").onclick=async()=>{try{const d=await api("/api/ai",{method:"POST",body:JSON.stringify({mode,message:$("#question").value})});$("#answer").textContent=typeof d.result==="string"?d.result:JSON.stringify(d.result,null,2)}catch(x){$("#answer").textContent=x.message}};
+load();
