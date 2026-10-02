@@ -1,2078 +1,1535 @@
-/* =========================================================
-   MINICLASSROOM
-   App principal
-   Institut Can Peixauet
-========================================================= */
+const $ = (s, p = document) => p.querySelector(s);
+const $$ = (s, p = document) => [...p.querySelectorAll(s)];
 
-(() => {
-  "use strict";
+const state = {
+  user: null,
+  dashboard: null,
+  tasks: [],
+  exams: [],
+  classes: [],
+  section: "dashboard",
+  taskFilter: "totes",
+  taskSearch: "",
+  aiMode: "DUBTE",
+  weekOffset: 0
+};
 
-  /* =======================================================
-     ESTAT
-  ======================================================= */
+const esc = (v) =>
+  String(v ?? "").replace(
+    /[&<>"']/g,
+    (m) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[m])
+  );
 
-  const state = {
-    user: null,
+const api = async (url, opts = {}) => {
+  const response = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(opts.headers || {})
+    },
+    ...opts
+  });
 
-    tasks: [],
-    exams: [],
-    classes: [],
-    dashboard: null,
-    progress: null,
-    studySessions: [],
-    testHistory: [],
+  let data = {};
 
-    currentSection: "dashboard",
-    currentClass: null,
+  try {
+    data = await response.json();
+  } catch {}
 
-    taskFilter: "totes",
-    taskSearch: "",
+  if (!response.ok) {
+    throw new Error(
+      data.error || "No s'ha pogut completar l'operació."
+    );
+  }
 
-    aiMode: "DUBTE",
+  return data;
+};
 
-    calendarOffset: 0,
-    plannerOffset: 0,
+const toast = (message, error = false) => {
+  const root = $("#toast-root");
 
-    loading: false
+  if (!root) return;
+
+  const element = document.createElement("div");
+
+  element.className =
+    "toast" + (error ? " error" : "");
+
+  element.textContent = message;
+
+  root.appendChild(element);
+
+  setTimeout(() => element.remove(), 3200);
+};
+
+const initials = (name) =>
+  (name || "M").trim().slice(0, 1).toUpperCase();
+
+const fmtDate = (value) => {
+  if (!value) return "Sense data";
+
+  const date = new Date(
+    String(value).includes("T")
+      ? value
+      : value + "T12:00:00"
+  );
+
+  if (isNaN(date)) return "Sense data";
+
+  return date.toLocaleDateString("ca-ES", {
+    day: "numeric",
+    month: "short"
+  });
+};
+
+const fullDate = (value) => {
+  if (!value) return "—";
+
+  const date = new Date(
+    value + "T12:00:00"
+  );
+
+  if (isNaN(date)) return "—";
+
+  return date.toLocaleDateString("ca-ES", {
+    weekday: "long",
+    day: "numeric",
+    month: "long"
+  });
+};
+
+const daysUntil = (value) => {
+  if (!value) return 999;
+
+  const today = new Date();
+
+  today.setHours(0, 0, 0, 0);
+
+  const target = new Date(
+    value + "T00:00:00"
+  );
+
+  return Math.ceil(
+    (target - today) / 86400000
+  );
+};
+
+function showToastFromError(error) {
+  toast(
+    error?.message ||
+      "S'ha produït un error.",
+    true
+  );
+}
+
+
+/* ============================================================
+   NAVEGACIÓ
+============================================================ */
+
+function navigate(section) {
+  state.section = section;
+
+  $$(".section").forEach((element) => {
+    element.classList.toggle(
+      "active",
+      element.id === "section-" + section
+    );
+  });
+
+  $$(".nav-item").forEach((element) => {
+    element.classList.toggle(
+      "active",
+      element.dataset.section === section
+    );
+  });
+
+  const names = {
+    dashboard: ["Tauler", "Avui"],
+    tasks: ["Tasques", "Organització"],
+    exams: ["Exàmens", "Preparació"],
+    planner: ["Planificador", "Ritme"],
+    classes: ["Classes", "Aula"],
+    ai: ["IA d'estudi", "Assistent"],
+    progress: ["Progrés", "Evolució"],
+    profile: ["Perfil", "Compte"]
   };
 
-
-  /* =======================================================
-     HELPERS DOM
-  ======================================================= */
-
-  const $ = (selector, root = document) =>
-    root.querySelector(selector);
-
-  const $$ = (selector, root = document) =>
-    Array.from(root.querySelectorAll(selector));
-
-
-  function escapeHtml(value) {
-    return String(value ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
+  if ($("#top-context")) {
+    $("#top-context").textContent =
+      names[section]?.[0] ||
+      "MiniClassroom";
   }
 
-
-  function initials(name) {
-    const text = String(name || "U").trim();
-
-    if (!text) return "U";
-
-    return text
-      .split(/\s+/)
-      .slice(0, 2)
-      .map(x => x[0])
-      .join("")
-      .toUpperCase();
+  if ($("#top-title")) {
+    $("#top-title").textContent =
+      names[section]?.[1] || "";
   }
 
+  if (section === "tasks") {
+    renderTasks();
+  }
 
-  function formatDate(value, options = {}) {
-    if (!value) return "—";
+  if (section === "exams") {
+    renderExams();
+  }
 
-    const date = new Date(`${String(value).slice(0, 10)}T12:00:00`);
+  if (section === "classes") {
+    loadClasses();
+  }
 
-    if (Number.isNaN(date.getTime())) {
-      return String(value);
+  if (section === "planner") {
+    renderPlanner();
+  }
+
+  if (section === "progress") {
+    loadProgress();
+  }
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+function bindNav() {
+  $$("[data-section]").forEach((button) => {
+    button.addEventListener(
+      "click",
+      () => navigate(button.dataset.section)
+    );
+  });
+}
+
+
+/* ============================================================
+   USUARI
+============================================================ */
+
+function setUser(user) {
+  state.user = user;
+
+  const name =
+    user.name ||
+    user.username ||
+    "Alumne";
+
+  if ($("#side-name"))
+    $("#side-name").textContent = name;
+
+  if ($("#top-name"))
+    $("#top-name").textContent = name;
+
+  if ($("#side-avatar"))
+    $("#side-avatar").textContent =
+      initials(name);
+
+  if ($("#top-avatar"))
+    $("#top-avatar").textContent =
+      initials(name);
+
+  if ($("#profile-name"))
+    $("#profile-name").textContent = name;
+
+  if ($("#profile-email"))
+    $("#profile-email").textContent =
+      user.email || "";
+
+  if ($("#profile-role"))
+    $("#profile-role").textContent =
+      user.role === "professor"
+        ? "Professor"
+        : "Alumne";
+
+  if ($("#profile-avatar"))
+    $("#profile-avatar").textContent =
+      initials(name);
+
+  if ($("#greeting")) {
+    $("#greeting").innerHTML =
+      user.role === "professor"
+        ? "La teva aula,<br><span>organitzada i al teu ritme.</span>"
+        : "El teu estudi,<br><span>clar i al teu ritme.</span>";
+  }
+
+  if ($("#side-role")) {
+    $("#side-role").textContent =
+      user.role === "professor"
+        ? "Professor"
+        : "Alumne";
+  }
+
+  if (user.role === "professor") {
+    $$(
+      ".nav-item[data-section='tasks'], " +
+      ".nav-item[data-section='exams'], " +
+      ".nav-item[data-section='planner'], " +
+      ".nav-item[data-section='ai'], " +
+      ".nav-item[data-section='progress']"
+    ).forEach((element) => {
+      element.classList.add("hidden");
+    });
+
+    if ($("#recalc-ai")) {
+      $("#recalc-ai").classList.add("hidden");
+    }
+  }
+}
+
+
+/* ============================================================
+   INICI
+============================================================ */
+
+async function boot() {
+  document.body.classList.add(
+    "app-booting"
+  );
+
+  try {
+    const data = await api("/api/me");
+
+    if (data.user) {
+      $("#auth-view")?.classList.add(
+        "hidden"
+      );
+
+      $("#app-view")?.classList.remove(
+        "hidden"
+      );
+
+      setUser(data.user);
+
+      /*
+       * Mostrem l'aplicació abans de carregar
+       * totes les dades secundàries.
+       * Això evita el retard visual.
+       */
+      document.body.classList.remove(
+        "app-booting"
+      );
+
+      await loadDashboard();
+
+      return;
+    }
+  } catch {}
+
+  $("#auth-view")?.classList.remove(
+    "hidden"
+  );
+
+  $("#app-view")?.classList.add(
+    "hidden"
+  );
+
+  document.body.classList.remove(
+    "app-booting"
+  );
+}
+
+
+/* ============================================================
+   DASHBOARD
+============================================================ */
+
+async function loadDashboard() {
+  try {
+    const data =
+      await api("/api/dashboard");
+
+    state.dashboard = data;
+
+    state.tasks =
+      data.tasks || [];
+
+    state.exams =
+      data.exams || [];
+
+    state.classes =
+      data.classes || [];
+
+    if ($("#stat-pending"))
+      $("#stat-pending").textContent =
+        data.pending_count || 0;
+
+    if ($("#stat-urgent"))
+      $("#stat-urgent").textContent =
+        data.urgent_count || 0;
+
+    if ($("#stat-progress"))
+      $("#stat-progress").textContent =
+        (data.progress || 0) + "%";
+
+    const completed =
+      state.tasks.filter(
+        (task) =>
+          task.status ===
+          "completada"
+      ).length;
+
+    if ($("#stat-completed")) {
+      $("#stat-completed").textContent =
+        `${completed} completades`;
     }
 
-    return new Intl.DateTimeFormat(
-      "ca-ES",
-      {
-        day: "numeric",
-        month: "short",
-        ...options
-      }
-    ).format(date);
-  }
-
-
-  function formatLongDate(value) {
-    if (!value) return "—";
-
-    const date = new Date(`${String(value).slice(0, 10)}T12:00:00`);
-
-    if (Number.isNaN(date.getTime())) {
-      return String(value);
+    if ($("#stat-exams")) {
+      $("#stat-exams").textContent =
+        state.exams.filter(
+          (exam) =>
+            daysUntil(
+              exam.exam_date
+            ) >= 0
+        ).length;
     }
 
-    return new Intl.DateTimeFormat(
+    const completedMinutes =
+      data.study?.completed_minutes ??
+      data.study_minutes ??
+      0;
+
+    const plannedMinutes =
+      data.study?.planned_minutes ??
+      data.planned_minutes ??
+      0;
+
+    if ($("#stat-study")) {
+      $("#stat-study").textContent =
+        `${completedMinutes} / ${plannedMinutes} min`;
+    }
+
+    renderDashboardLists();
+
+    renderTomorrow();
+
+    /*
+     * La recomanació d'IA es carrega
+     * després de pintar la pantalla.
+     */
+    setTimeout(
+      () => renderRecommendations(false),
+      50
+    );
+
+  } catch (error) {
+    showToastFromError(error);
+  }
+}
+
+function renderDashboardLists() {
+  const pending =
+    state.tasks
+      .filter(
+        (task) =>
+          task.status !==
+          "completada"
+      )
+      .slice(0, 4);
+
+  const taskBox =
+    $("#dashboard-tasks");
+
+  if (taskBox) {
+    taskBox.innerHTML =
+      pending.length
+        ? pending
+            .map(
+              (task) => `
+                <div
+                  class="mini-list-item"
+                  style="
+                    display:flex;
+                    justify-content:space-between;
+                    gap:10px;
+                    padding:10px 0;
+                    border-bottom:1px solid #1a1d23
+                  "
+                >
+                  <div>
+                    <b style="font-size:10px">
+                      ${esc(task.name)}
+                    </b>
+
+                    <small
+                      style="
+                        display:block;
+                        color:#777c87;
+                        font-size:9px;
+                        margin-top:3px
+                      "
+                    >
+                      ${esc(task.subject || "")}
+                      ·
+                      ${fmtDate(task.due_date)}
+                    </small>
+                  </div>
+
+                  <span class="pill">
+                    ${esc(task.status)}
+                  </span>
+                </div>
+              `
+            )
+            .join("")
+        : `
+          <div class="empty-state">
+            <span>✓</span>
+            <b>No tens tasques pendents.</b>
+            <small>
+              Quan n'afegeixis,
+              MiniClassroom t'ajudarà
+              a ordenar-les.
+            </small>
+          </div>
+        `;
+  }
+
+  const exams =
+    state.exams
+      .filter(
+        (exam) =>
+          daysUntil(
+            exam.exam_date
+          ) >= 0
+      )
+      .slice(0, 3);
+
+  const examBox =
+    $("#dashboard-exams");
+
+  if (examBox) {
+    examBox.innerHTML =
+      exams.length
+        ? exams
+            .map(
+              (exam) => `
+                <div
+                  style="
+                    padding:11px 0;
+                    border-bottom:1px solid #1a1d23
+                  "
+                >
+                  <b style="font-size:10px">
+                    ${esc(exam.subject)}
+                  </b>
+
+                  <small
+                    style="
+                      display:block;
+                      color:#8d91a0;
+                      font-size:9px;
+                      margin-top:3px
+                    "
+                  >
+                    ${fullDate(exam.exam_date)}
+                    ·
+                    ${Math.max(
+                      0,
+                      daysUntil(
+                        exam.exam_date
+                      )
+                    )}
+                    dies
+                  </small>
+                </div>
+              `
+            )
+            .join("")
+        : `
+          <div class="empty-state">
+            <span>□</span>
+            <b>No hi ha exàmens.</b>
+            <small>
+              Afegeix-ne un per començar
+              a preparar-lo.
+            </small>
+          </div>
+        `;
+  }
+}
+
+function renderTomorrow() {
+  const tomorrow =
+    new Date();
+
+  tomorrow.setDate(
+    tomorrow.getDate() + 1
+  );
+
+  const label =
+    tomorrow.toLocaleDateString(
       "ca-ES",
       {
         weekday: "long",
         day: "numeric",
         month: "long"
       }
-    ).format(date);
-  }
-
-
-  function daysUntil(value) {
-    if (!value) return null;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
-
-    return Math.round(
-      (date - today) / 86400000
     );
+
+  if ($("#tomorrow-label")) {
+    $("#tomorrow-label").textContent =
+      label;
   }
 
+  const iso =
+    tomorrow
+      .toISOString()
+      .slice(0, 10);
 
-  function difficultyLabel(value) {
-    const normalized = String(value || "").toLowerCase();
-
-    if (
-      normalized === "alta" ||
-      normalized === "3"
-    ) {
-      return "Alta";
-    }
-
-    if (
-      normalized === "baixa" ||
-      normalized === "1"
-    ) {
-      return "Baixa";
-    }
-
-    return "Mitjana";
-  }
-
-
-  function difficultyValue(value) {
-    const normalized = String(value || "").toLowerCase();
-
-    if (
-      normalized === "alta" ||
-      normalized === "3"
-    ) {
-      return "alta";
-    }
-
-    if (
-      normalized === "baixa" ||
-      normalized === "1"
-    ) {
-      return "baixa";
-    }
-
-    return "mitjana";
-  }
-
-
-  function statusLabel(status) {
-    if (status === "completada") return "Completada";
-    if (status === "en procés") return "En procés";
-    return "Pendent";
-  }
-
-
-  function showToast(message, type = "info") {
-    const root = $("#toast-root");
-
-    if (!root) return;
-
-    const toast = document.createElement("div");
-
-    toast.className = `toast ${type}`;
-
-    toast.textContent = message;
-
-    root.appendChild(toast);
-
-    setTimeout(() => {
-      toast.remove();
-    }, 3500);
-  }
-
-
-  function showError(error) {
-    showToast(
-      error?.message ||
-      "S'ha produït un error.",
-      "error"
+  const tasks =
+    state.tasks.filter(
+      (task) =>
+        task.due_date === iso
     );
+
+  const exams =
+    state.exams.filter(
+      (exam) =>
+        exam.exam_date === iso
+    );
+
+  const box =
+    $("#tomorrow-content");
+
+  if (!box) return;
+
+  if (tasks.length || exams.length) {
+    box.innerHTML = `
+      <span class="calendar-icon">!</span>
+
+      <div>
+        <strong>
+          ${tasks.length + exams.length}
+          element${tasks.length + exams.length === 1 ? "" : "s"}
+          per demà.
+        </strong>
+
+        <small>
+          ${
+            [
+              ...tasks.map(
+                (task) => task.name
+              ),
+              ...exams.map(
+                (exam) =>
+                  "Examen de " +
+                  exam.subject
+              )
+            ]
+              .slice(0, 3)
+              .map(esc)
+              .join(" · ")
+          }
+        </small>
+      </div>
+    `;
   }
+}
 
 
-  /* =======================================================
-     API
-  ======================================================= */
+/* ============================================================
+   IA
+============================================================ */
 
-  async function api(
-    url,
-    options = {}
+async function renderRecommendations(
+  force = true
+) {
+  if (
+    state.user?.role ===
+    "professor"
   ) {
-    const config = {
-      credentials: "same-origin",
-      ...options
-    };
-
-    if (
-      config.body &&
-      typeof config.body !== "string"
-    ) {
-      config.headers = {
-        "Content-Type": "application/json",
-        ...(config.headers || {})
-      };
-
-      config.body = JSON.stringify(config.body);
-    }
-
-    const response = await fetch(
-      url,
-      config
-    );
-
-    let data = null;
-
-    try {
-      data = await response.json();
-    } catch {
-      data = {};
-    }
-
-    if (!response.ok || data.ok === false) {
-      throw new Error(
-        data.error ||
-        `Error ${response.status}`
-      );
-    }
-
-    return data;
+    return;
   }
 
-
-  /* =======================================================
-     AUTENTICACIÓ
-  ======================================================= */
-
-  function showAuthMessage(message) {
-    const box = $("#auth-message");
-
-    if (box) {
-      box.textContent = message || "";
-    }
-  }
-
-
-  function setAuthTab(mode) {
-    const login = $("#login-form");
-    const register = $("#register-form");
-
-    $$(".auth-tab").forEach(tab => {
-      tab.classList.toggle(
-        "active",
-        tab.dataset.auth === mode
-      );
-    });
-
-    if (login) {
-      login.classList.toggle(
-        "hidden",
-        mode !== "login"
-      );
-    }
-
-    if (register) {
-      register.classList.toggle(
-        "hidden",
-        mode !== "register"
-      );
-    }
-
-    showAuthMessage("");
-  }
-
-
-  async function login(event) {
-    event.preventDefault();
-
-    const form = event.currentTarget;
-
-    const data = Object.fromEntries(
-      new FormData(form).entries()
-    );
-
-    const button = $("button[type='submit']", form);
-
-    if (button) {
-      button.disabled = true;
-      button.textContent = "Entrant...";
-    }
-
-    try {
-      const result = await api(
-        "/api/login",
-        {
-          method: "POST",
-          body: data
-        }
-      );
-
-      state.user = result.user;
-
-      showToast(
-        "Sessió iniciada correctament.",
-        "success"
-      );
-
-      await bootApp();
-
-    } catch (error) {
-
-      showAuthMessage(error.message);
-
-    } finally {
-
-      if (button) {
-        button.disabled = false;
-        button.innerHTML = "Entrar <span>→</span>";
-      }
-
-    }
-  }
-
-
-  async function register(event) {
-    event.preventDefault();
-
-    const form = event.currentTarget;
-
-    const data = Object.fromEntries(
-      new FormData(form).entries()
-    );
-
-    try {
-
-      const result = await api(
-        "/api/register",
-        {
-          method: "POST",
-          body: data
-        }
-      );
-
-      state.user = result.user;
-
-      showToast(
-        "Compte creat correctament.",
-        "success"
-      );
-
-      await bootApp();
-
-    } catch (error) {
-
-      showAuthMessage(error.message);
-
-    }
-  }
-
-
-  async function logout() {
-    try {
+  try {
+    const data =
       await api(
-        "/api/logout",
-        {
-          method: "POST"
-        }
-      );
-    } catch {
-      // Encara que falli el servidor,
-      // tanquem la interfície local.
-    }
-
-    state.user = null;
-
-    $("#app-view")?.classList.add("hidden");
-    $("#auth-view")?.classList.remove("hidden");
-
-    setAuthTab("login");
-
-    showToast(
-      "Sessió tancada.",
-      "success"
-    );
-  }
-
-
-  /* =======================================================
-     USUARI
-  ======================================================= */
-
-  function setUser(user) {
-    state.user = user;
-
-    const name =
-      user?.username ||
-      user?.name ||
-      "Usuari";
-
-    const role =
-      user?.role === "professor"
-        ? "Professor"
-        : "Alumne";
-
-    const initial = initials(name);
-
-    const ids = [
-      "side-name",
-      "top-name",
-      "profile-name"
-    ];
-
-    ids.forEach(id => {
-      const element = $(`#${id}`);
-
-      if (element) {
-        element.textContent = name;
-      }
-    });
-
-
-    ["side-role", "top-role"].forEach(id => {
-      const element = $(`#${id}`);
-
-      if (element) {
-        element.textContent = role;
-      }
-    });
-
-
-    const email = $("#profile-email");
-
-    if (email) {
-      email.textContent = user?.email || "—";
-    }
-
-
-    const profileRole = $("#profile-role");
-
-    if (profileRole) {
-      profileRole.textContent = role;
-    }
-
-
-    [
-      "#side-avatar",
-      "#top-avatar",
-      "#profile-avatar"
-    ].forEach(selector => {
-      const element = $(selector);
-
-      if (element) {
-        element.textContent = initial;
-      }
-    });
-
-
-    applyRolePermissions();
-  }
-
-
-  function applyRolePermissions() {
-    const professor =
-      state.user?.role === "professor";
-
-    const classActions =
-      $("#class-actions");
-
-    if (!classActions) return;
-
-    if (professor) {
-
-      classActions.innerHTML = `
-        <button
-          class="btn btn-yellow"
-          id="create-class"
-        >
-          ＋ Crear classe
-        </button>
-      `;
-
-      $("#create-class")
-        ?.addEventListener(
-          "click",
-          openClassCreateModal
-        );
-
-    } else {
-
-      classActions.innerHTML = `
-        <button
-          class="btn btn-blue"
-          id="join-class"
-        >
-          ＋ Unir-me a una classe
-        </button>
-      `;
-
-      $("#join-class")
-        ?.addEventListener(
-          "click",
-          openJoinClassModal
-        );
-    }
-  }
-
-
-  /* =======================================================
-     ARRANCADA
-  ======================================================= */
-
-  async function boot() {
-
-    try {
-
-      const result = await api(
-        "/api/me"
+        "/api/ai/recommendations"
       );
 
-      state.user = result.user;
-
-      await bootApp();
-
-    } catch {
-
-      $("#auth-view")?.classList.remove("hidden");
-      $("#app-view")?.classList.add("hidden");
-
-    }
-  }
-
-
-  async function bootApp() {
-
-    $("#auth-view")?.classList.add("hidden");
-    $("#app-view")?.classList.remove("hidden");
-
-    setUser(state.user);
-
-    bindApplicationEvents();
-
-    await refreshAll();
-
-    navigate("dashboard");
-  }
-
-
-  async function refreshAll() {
-
-    try {
-      await Promise.all([
-        loadDashboard(),
-        loadTasks(),
-        loadExams(),
-        loadClasses(),
-        loadProgress(),
-        loadStudySessions(),
-        loadTestHistory()
-      ]);
-
-    } catch (error) {
-      showError(error);
-    }
-  }
-
-
-  /* =======================================================
-     NAVEGACIÓ
-  ======================================================= */
-
-  function navigate(section) {
-
-    if (!section) {
-      section = "dashboard";
-    }
-
-    state.currentSection = section;
-
-    $$(".section").forEach(item => {
-      item.classList.toggle(
-        "active",
-        item.id === `section-${section}`
-      );
-    });
-
-
-    $$(".nav-item").forEach(item => {
-      item.classList.toggle(
-        "active",
-        item.dataset.section === section
-      );
-    });
-
-
-    if (section === "dashboard") {
-      loadDashboard();
-    }
-
-    if (section === "tasks") {
-      loadTasks();
-    }
-
-    if (section === "exams") {
-      loadExams();
-    }
-
-    if (section === "classes") {
-      loadClasses();
-    }
-
-    if (section === "calendar") {
-      renderCalendar();
-    }
-
-    if (section === "planner") {
-      renderPlanner();
-    }
-
-    if (section === "progress") {
-      loadProgress();
-      loadTestHistory();
-    }
-
-    if (section === "ai") {
-      focusAI();
-    }
-
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
-  }
-
-
-  /* =======================================================
-     DASHBOARD
-  ======================================================= */
-
-  async function loadDashboard() {
-
-    const data = await api(
-      "/api/dashboard"
-    );
-
-    state.dashboard = data;
-
-    state.tasks = data.tasks || state.tasks;
-    state.exams = data.exams || state.exams;
-
-    updateDashboardStats(data);
-
-    renderDashboardTasks();
-
-    renderDashboardExams();
-
-    await loadClasses();
-
-    renderAgenda();
-  }
-
-
-  function updateDashboardStats(data) {
-
-    const pending =
-      data.pending_count ??
-      data.stats?.pending ??
-      0;
-
-    const urgent =
-      data.urgent_count ??
-      data.stats?.urgent ??
-      0;
-
-    const progress =
-      data.progress ??
-      data.stats?.progress ??
-      0;
-
-    const completed =
-      data.stats?.completed ??
-      0;
-
-    const exams =
-      data.stats?.exams ??
-      state.exams.length;
-
-    const studyCompleted =
-      data.study?.completed ??
-      data.stats?.study_minutes ??
-      0;
-
-    const studyPlanned =
-      data.study?.planned ??
-      0;
-
-
-    $("#stat-pending").textContent = pending;
-
-    $("#stat-completed").textContent =
-      `${completed} completades`;
-
-    $("#stat-exams").textContent = exams;
-
-    $("#stat-progress").textContent =
-      `${progress}%`;
-
-    $("#stat-urgent").textContent = urgent;
-
-    $("#stat-study").textContent =
-      `${studyCompleted} / ${studyPlanned} min`;
-  }
-
-
-  function renderDashboardTasks() {
-
-    const container =
-      $("#dashboard-tasks");
-
-    if (!container) return;
-
-    const tasks = state.tasks
-      .filter(t => t.status !== "completada")
-      .sort(sortTasks)
-      .slice(0, 4);
-
-
-    if (!tasks.length) {
-
-      container.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">✓</div>
-          <strong>No tens tasques pendents.</strong>
-          <small>
-            Quan n'afegeixis, apareixeran aquí.
-          </small>
-        </div>
-      `;
-
-      return;
-    }
-
-
-    container.innerHTML =
-      tasks.map(task => `
-        <div class="compact-item">
-
-          <span class="compact-marker">
-            ✓
-          </span>
-
-          <div>
-            <strong>
-              ${escapeHtml(task.name)}
-            </strong>
-
-            <small>
-              ${escapeHtml(task.subject || "Sense assignatura")}
-              ·
-              ${task.due_date
-                ? escapeHtml(formatDate(task.due_date))
-                : "Sense data"}
-            </small>
-          </div>
-
-        </div>
-      `).join("");
-  }
-
-
-  function renderDashboardExams() {
-
-    const container =
-      $("#dashboard-exams");
-
-    if (!container) return;
-
-    const exams = [...state.exams]
-      .sort((a, b) =>
-        String(a.exam_date)
-          .localeCompare(String(b.exam_date))
-      )
-      .slice(0, 4);
-
-
-    if (!exams.length) {
-
-      container.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">▣</div>
-          <strong>No hi ha exàmens.</strong>
-          <small>
-            Afegeix-ne un per començar a preparar-lo.
-          </small>
-        </div>
-      `;
-
-      return;
-    }
-
-
-    container.innerHTML =
-      exams.map(exam => {
-
-        const days =
-          daysUntil(exam.exam_date);
-
-        let label = formatDate(
-          exam.exam_date
-        );
-
-        if (days === 0) {
-          label = "Avui";
-        } else if (days === 1) {
-          label = "Demà";
-        }
-
-        return `
-          <div class="compact-item">
-
-            <span class="compact-marker"
-                  style="
-                    color:#ff656a;
-                    background:rgba(237,28,36,.13)
-                  ">
-              ▣
+    const recommendation =
+      data.recommendations?.[0];
+
+    if ($("#recommendation-box")) {
+      $("#recommendation-box").innerHTML =
+        recommendation
+          ? `
+            <span class="reco-orb">
+              ✦
             </span>
 
             <div>
               <strong>
-                ${escapeHtml(exam.subject)}
+                ${esc(
+                  recommendation.action
+                )}
+                —
+                ${esc(
+                  recommendation.title
+                )}
               </strong>
 
               <small>
-                ${escapeHtml(label)}
-                ·
-                ${escapeHtml(
-                  difficultyLabel(exam.difficulty)
+                ${esc(
+                  recommendation.reason
                 )}
               </small>
             </div>
-
-          </div>
-        `;
-      }).join("");
-  }
-
-
-  function renderDashboardClasses() {
-
-    const container =
-      $("#dashboard-classes");
-
-    if (!container) return;
-
-    const classes =
-      state.classes.slice(0, 4);
-
-
-    if (!classes.length) {
-
-      container.innerHTML = `
-        <div class="empty-state"
-             style="grid-column:1/-1">
-
-          <div class="empty-state-icon">
-            ⌘
-          </div>
-
-          <strong>
-            Encara no tens classes.
-          </strong>
-
-          <small>
-            Uneix-te a una classe o crea'n una.
-          </small>
-
-        </div>
-      `;
-
-      return;
-    }
-
-
-    container.innerHTML =
-      classes.map(renderClassCard).join("");
-  }
-
-
-  function renderAgenda() {
-
-    const container =
-      $("#agenda-list");
-
-    if (!container) return;
-
-    const todayISO =
-      new Date().toISOString().slice(0, 10);
-
-    const events = [];
-
-
-    state.tasks
-      .filter(t =>
-        t.status !== "completada" &&
-        t.due_date
-      )
-      .forEach(task => {
-
-        if (
-          String(task.due_date).slice(0, 10)
-          === todayISO
-        ) {
-          events.push({
-            time: "Avui",
-            title: task.name,
-            subtitle: task.subject || "Tasca",
-            type: "task"
-          });
-        }
-
-      });
-
-
-    state.exams
-      .filter(exam =>
-        String(exam.exam_date).slice(0, 10)
-        === todayISO
-      )
-      .forEach(exam => {
-
-        events.push({
-          time: "Avui",
-          title: `Examen de ${exam.subject}`,
-          subtitle: "Examen",
-          type: "red"
-        });
-
-      });
-
-
-    if (!events.length) {
-
-      container.innerHTML = `
-        <div class="empty-state">
-
-          <div class="empty-state-icon">
-            ✓
-          </div>
-
-          <strong>
-            Avui està lliure.
-          </strong>
-
-          <small>
-            No tens cap activitat registrada per avui.
-          </small>
-
-        </div>
-      `;
-
-      return;
-    }
-
-
-    container.innerHTML =
-      events.map(event => `
-        <div class="agenda-item ${event.type}">
-
-          <span class="agenda-time">
-            ${escapeHtml(event.time)}
-          </span>
-
-          <span class="agenda-dot"></span>
-
-          <div>
-            <strong>
-              ${escapeHtml(event.title)}
-            </strong>
-
-            <small>
-              ${escapeHtml(event.subtitle)}
-            </small>
-          </div>
-
-        </div>
-      `).join("");
-  }
-
-
-  /* =======================================================
-     TASQUES
-  ======================================================= */
-
-  async function loadTasks() {
-
-    const data =
-      await api("/api/tasks");
-
-    state.tasks =
-      data.tasks || [];
-
-    renderTasks();
-
-    renderDashboardTasks();
-  }
-
-
-  function sortTasks(a, b) {
-
-    const statusOrder = {
-      "pendent": 0,
-      "en procés": 1,
-      "completada": 2
-    };
-
-    const statusA =
-      statusOrder[a.status] ?? 3;
-
-    const statusB =
-      statusOrder[b.status] ?? 3;
-
-    if (statusA !== statusB) {
-      return statusA - statusB;
-    }
-
-    return String(a.due_date || "9999")
-      .localeCompare(
-        String(b.due_date || "9999")
-      );
-  }
-
-
-  function filteredTasks() {
-
-    return state.tasks
-      .filter(task => {
-
-        if (
-          state.taskFilter !== "totes" &&
-          task.status !== state.taskFilter
-        ) {
-          return false;
-        }
-
-        if (!state.taskSearch) {
-          return true;
-        }
-
-        const text = [
-          task.name,
-          task.subject,
-          task.description
-        ]
-          .join(" ")
-          .toLowerCase();
-
-        return text.includes(
-          state.taskSearch.toLowerCase()
-        );
-      })
-      .sort(sortTasks);
-  }
-
-
-  function renderTasks() {
-
-    const container =
-      $("#tasks-list");
-
-    if (!container) return;
-
-    const tasks =
-      filteredTasks();
-
-
-    if (!tasks.length) {
-
-      container.innerHTML = `
-        <div class="panel">
-
-          <div class="empty-state">
-
-            <div class="empty-state-icon">
+          `
+          : `
+            <span class="reco-orb">
               ✓
-            </div>
+            </span>
 
-            <strong>
-              No hi ha tasques per mostrar.
-            </strong>
-
-            <small>
-              Crea una tasca o canvia el filtre.
-            </small>
-
-          </div>
-
-        </div>
-      `;
-
-      return;
-    }
-
-
-    container.innerHTML =
-      tasks.map(task => {
-
-        const completed =
-          task.status === "completada";
-
-        const due =
-          task.due_date
-            ? formatDate(task.due_date)
-            : "Sense data";
-
-
-        return `
-          <div
-            class="task-row ${completed ? "completed" : ""}"
-            data-task-id="${task.id}"
-          >
-
-            <button
-              class="task-check"
-              data-action="complete-task"
-              data-id="${task.id}"
-              title="Canviar estat"
-            >
-              ${completed ? "✓" : ""}
-            </button>
-
-
-            <button
-              class="task-info"
-              data-action="edit-task"
-              data-id="${task.id}"
-              style="
-                border:0;
-                background:transparent;
-                color:inherit;
-                text-align:left;
-                cursor:pointer
-              "
-            >
-
+            <div>
               <strong>
-                ${escapeHtml(task.name)}
+                No tens res urgent.
               </strong>
 
               <small>
-                ${escapeHtml(
-                  task.subject ||
-                  "Sense assignatura"
-                )}
-                ·
-                ${escapeHtml(
-                  difficultyLabel(task.difficulty)
-                )}
-                ·
-                ${escapeHtml(
-                  String(
-                    task.estimated_minutes || 0
-                  )
-                )}
-                min
+                Continua amb una sessió curta
+                de repàs per mantenir el ritme.
               </small>
+            </div>
+          `;
+    }
 
-            </button>
-
-
-            <span class="task-date">
-              ${escapeHtml(due)}
-            </span>
-
-
-            <span class="task-status">
-              ${escapeHtml(
-                statusLabel(task.status)
-              )}
-            </span>
-
-          </div>
-        `;
-      }).join("");
-  }
-
-
-  async function toggleTask(task) {
-
-    const nextStatus =
-      task.status === "completada"
-        ? "pendent"
-        : "completada";
-
-
-    try {
-
-      await api(
-        `/api/tasks/${task.id}`,
-        {
-          method: "PATCH",
-          body: {
-            status: nextStatus
-          }
-        }
+    if (force) {
+      toast(
+        "Prioritats actualitzades amb IA."
       );
+    }
 
-      await loadTasks();
-      await loadDashboard();
-
-      showToast(
-        nextStatus === "completada"
-          ? "Tasca completada."
-          : "Tasca marcada com a pendent.",
-        "success"
-      );
-
-    } catch (error) {
-
-      showError(error);
-
+  } catch (error) {
+    if (force) {
+      showToastFromError(error);
     }
   }
+}
 
 
-  /* =======================================================
-     MODAL GENÈRIC
-  ======================================================= */
+/* ============================================================
+   TASQUES
+============================================================ */
 
-  function openModal({
-    title,
-    body,
-    footer = ""
-  }) {
+function renderTasks() {
+  let list =
+    state.tasks.filter(
+      (task) =>
+        state.taskFilter === "totes" ||
+        task.status ===
+          state.taskFilter
+    );
 
-    const root =
-      $("#modal-root");
+  if (state.taskSearch) {
+    list = list.filter(
+      (task) =>
+        (
+          task.name +
+          " " +
+          (task.subject || "")
+        )
+          .toLowerCase()
+          .includes(
+            state.taskSearch
+              .toLowerCase()
+          )
+    );
+  }
 
-    if (!root) return;
+  const box =
+    $("#tasks-list");
 
-    root.innerHTML = `
-      <div class="modal-backdrop">
+  if (!box) return;
 
-        <div class="modal">
-
-          <div class="modal-header">
-
-            <h2>
-              ${escapeHtml(title)}
-            </h2>
-
-            <button
-              class="modal-close"
-              data-close-modal
-            >
-              ×
-            </button>
-
-          </div>
-
-          <div class="modal-body">
-            ${body}
-          </div>
-
-          ${
-            footer
-              ? `<div class="modal-footer">${footer}</div>`
-              : ""
-          }
-
-        </div>
-
+  if (!list.length) {
+    box.innerHTML = `
+      <div
+        class="card empty-state"
+        style="min-height:260px"
+      >
+        <span>✓</span>
+        <b>
+          No hi ha tasques en aquesta vista.
+        </b>
+        <small>
+          Afegir una tasca et permetrà
+          començar a planificar millor.
+        </small>
       </div>
     `;
 
-
-    $(".modal-backdrop")
-      ?.addEventListener(
-        "click",
-        event => {
-
-          if (
-            event.target.classList.contains(
-              "modal-backdrop"
-            )
-          ) {
-            closeModal();
-          }
-
-        }
-      );
-
-
-    $("[data-close-modal]")
-      ?.addEventListener(
-        "click",
-        closeModal
-      );
+    return;
   }
 
-
-  function closeModal() {
-    const root =
-      $("#modal-root");
-
-    if (root) {
-      root.innerHTML = "";
-    }
-  }
-
-
-  /* =======================================================
-     MODAL TASCA
-  ======================================================= */
-
-  function openTaskModal(task = null) {
-
-    const editing = Boolean(task);
-
-    const title =
-      editing
-        ? "Editar tasca"
-        : "Nova tasca";
-
-
-    openModal({
-      title,
-
-      body: `
-        <form id="task-modal-form">
-
-          <div class="form-grid">
-
-            <div class="form-field full">
-              <label>Nom de la tasca</label>
-
-              <input
-                name="name"
-                required
-                value="${escapeHtml(
-                  task?.name || ""
-                )}"
-                placeholder="Ex. Exercicis de matemàtiques"
-              >
-            </div>
-
-
-            <div class="form-field">
-              <label>Assignatura</label>
-
-              <input
-                name="subject"
-                value="${escapeHtml(
-                  task?.subject || ""
-                )}"
-                placeholder="Matemàtiques"
-              >
-            </div>
-
-
-            <div class="form-field">
-              <label>Data d'entrega</label>
-
-              <input
-                name="due_date"
-                type="date"
-                value="${escapeHtml(
-                  task?.due_date
-                    ? String(task.due_date).slice(0, 10)
-                    : ""
-                )}"
-              >
-            </div>
-
-
-            <div class="form-field">
-              <label>Temps estimat (minuts)</label>
-
-              <input
-                name="estimated_minutes"
-                type="number"
-                min="1"
-                value="${escapeHtml(
-                  task?.estimated_minutes || 30
-                )}"
-              >
-            </div>
-
-
-            <div class="form-field">
-              <label>Dificultat</label>
-
-              <select name="difficulty">
-
-                <option
-                  value="baixa"
-                  ${
-                    difficultyValue(task?.difficulty)
-                      === "baixa"
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  Baixa
-                </option>
-
-                <option
-                  value="mitjana"
-                  ${
-                    difficultyValue(task?.difficulty)
-                      === "mitjana"
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  Mitjana
-                </option>
-
-                <option
-                  value="alta"
-                  ${
-                    difficultyValue(task?.difficulty)
-                      === "alta"
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  Alta
-                </option>
-
-              </select>
-            </div>
-
-
-            <div class="form-field">
-              <label>Estat</label>
-
-              <select name="status">
-
-                <option
-                  value="pendent"
-                  ${
-                    (task?.status || "pendent")
-                      === "pendent"
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  Pendent
-                </option>
-
-                <option
-                  value="en procés"
-                  ${
-                    task?.status === "en procés"
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  En procés
-                </option>
-
-                <option
-                  value="completada"
-                  ${
-                    task?.status === "completada"
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  Completada
-                </option>
-
-              </select>
-            </div>
-
-
-            <div class="form-field full">
-
-              <label>Descripció</label>
-
-              <textarea
-                name="description"
-                placeholder="Afegeix detalls..."
-              >${escapeHtml(
-                task?.description || ""
-              )}</textarea>
-
-            </div>
-
-          </div>
-
-        </form>
-      `,
-
-      footer: `
-
-        ${
-          editing
-            ? `
-              <button
-                class="btn btn-outline"
-                id="delete-task"
-              >
-                Eliminar
-              </button>
-            `
-            : ""
-        }
-
-        <button
-          class="btn btn-outline"
-          data-close-modal
-        >
-          Cancel·lar
-        </button>
-
-        <button
-          class="btn btn-blue"
-          id="save-task"
-        >
-          ${editing ? "Guardar canvis" : "Crear tasca"}
-        </button>
-
-      `
-    });
-
-
-    $("#save-task")
-      ?.addEventListener(
-        "click",
-        async () => {
-
-          const form =
-            $("#task-modal-form");
-
-          const data =
-            Object.fromEntries(
-              new FormData(form).entries()
-            );
-
-          data.estimated_minutes =
-            Number(data.estimated_minutes || 30);
-
-          try {
-
-            await api(
-              editing
-                ? `/api/tasks/${task.id}`
-                : "/api/tasks",
-              {
-                method: editing
-                  ? "PATCH"
-                  : "POST",
-                body: data
-              }
-            );
-
-            closeModal();
-
-            await loadTasks();
-            await loadDashboard();
-
-            showToast(
-              editing
-                ? "Tasca actualitzada."
-                : "Tasca creada.",
-              "success"
-            );
-
-          } catch (error) {
-
-            showError(error);
-
-          }
-
-        }
-      );
-
-
-    $("#delete-task")
-      ?.addEventListener(
-        "click",
-        async () => {
-
-          if (
-            !confirm(
-              "Vols eliminar aquesta tasca?"
-            )
-          ) {
-            return;
-          }
-
-          try {
-
-            await api(
-              `/api/tasks/${task.id}`,
-              {
-                method: "DELETE"
-              }
-            );
-
-            closeModal();
-
-            await loadTasks();
-            await loadDashboard();
-
-            showToast(
-              "Tasca eliminada.",
-              "success"
-            );
-
-          } catch (error) {
-
-            showError(error);
-
-          }
-
-        }
-      );
-  }
-
-
-  /* =======================================================
-     EXÀMENS
-  ======================================================= */
-
-  async function loadExams() {
-
-    const data =
-      await api("/api/exams");
-
-    state.exams =
-      data.exams || [];
-
-    renderExams();
-    renderDashboardExams();
-  }
-
-
-  function renderExams() {
-
-    const container =
-      $("#exams-list");
-
-    if (!container) return;
-
-
-    const exams =
-      [...state.exams]
-        .sort((a, b) =>
-          String(a.exam_date)
-            .localeCompare(
-              String(b.exam_date)
-            )
-        );
-
-
-    if (!exams.length) {
-
-      container.innerHTML = `
-        <div class="panel"
-             style="grid-column:1/-1">
-
-          <div class="empty-state">
-
-            <div class="empty-state-icon">
-              ▣
-            </div>
-
-            <strong>
-              No tens exàmens registrats.
-            </strong>
-
-            <small>
-              Afegeix el primer examen per començar.
-            </small>
-
-          </div>
-
-        </div>
-      `;
-
-      return;
-    }
-
-
-    container.innerHTML =
-      exams.map(exam => {
-
-        const days =
-          daysUntil(exam.exam_date);
-
-        let dateLabel =
-          formatDate(exam.exam_date);
-
-        if (days === 0) {
-          dateLabel = "Avui";
-        } else if (days === 1) {
-          dateLabel = "Demà";
-        }
-
+  box.innerHTML =
+    list
+      .map((task) => {
+        const done =
+          task.status ===
+          "completada";
 
         return `
-          <article
-            class="exam-card"
-            data-exam-id="${exam.id}"
+          <div class="task-row">
+
+            <button
+              class="check ${done ? "done" : ""}"
+              data-complete="${task.id}"
+              title="Completar"
+            >
+              ${done ? "✓" : ""}
+            </button>
+
+            <div class="task-main">
+              <b>
+                ${esc(task.name)}
+              </b>
+
+              <small>
+                ${esc(
+                  task.description ||
+                  "Sense descripció"
+                )}
+              </small>
+            </div>
+
+            <div class="task-subject">
+              ${esc(
+                task.subject || ""
+              )}
+            </div>
+
+            <div class="task-meta">
+              <small>
+                ${fmtDate(
+                  task.due_date
+                )}
+              </small>
+
+              <small>
+                ${task.estimated_minutes || 30}
+                min
+              </small>
+            </div>
+
+            <select
+              class="status-select"
+              data-status="${task.id}"
+            >
+              <option
+                value="pendent"
+                ${task.status === "pendent" ? "selected" : ""}
+              >
+                Pendent
+              </option>
+
+              <option
+                value="en procés"
+                ${task.status === "en procés" ? "selected" : ""}
+              >
+                En procés
+              </option>
+
+              <option
+                value="completada"
+                ${done ? "selected" : ""}
+              >
+                Completada
+              </option>
+            </select>
+
+            <div class="row-actions">
+              <button
+                data-edit="${task.id}"
+              >
+                ✎
+              </button>
+
+              <button
+                data-delete="${task.id}"
+              >
+                ×
+              </button>
+            </div>
+
+          </div>
+        `;
+      })
+      .join("");
+
+  $$("[data-complete]").forEach(
+    (button) => {
+      button.onclick = async () => {
+        try {
+          await api(
+            `/api/tasks/${button.dataset.complete}`,
+            {
+              method: "PATCH",
+              body: JSON.stringify({
+                status:
+                  "completada"
+              })
+            }
+          );
+
+          await loadDashboard();
+
+          renderTasks();
+
+          toast(
+            "Tasca completada."
+          );
+
+        } catch (error) {
+          showToastFromError(error);
+        }
+      };
+    }
+  );
+
+  $$("[data-status]").forEach(
+    (select) => {
+      select.onchange = async () => {
+        try {
+          await api(
+            `/api/tasks/${select.dataset.status}`,
+            {
+              method: "PATCH",
+              body: JSON.stringify({
+                status:
+                  select.value
+              })
+            }
+          );
+
+          await loadDashboard();
+
+          renderTasks();
+
+        } catch (error) {
+          showToastFromError(error);
+        }
+      };
+    }
+  );
+
+  $$("[data-delete]").forEach(
+    (button) => {
+      button.onclick = async () => {
+        if (
+          !confirm(
+            "Vols eliminar aquesta tasca?"
+          )
+        ) {
+          return;
+        }
+
+        try {
+          await api(
+            `/api/tasks/${button.dataset.delete}`,
+            {
+              method: "DELETE"
+            }
+          );
+
+          await loadDashboard();
+
+          renderTasks();
+
+          toast(
+            "Tasca eliminada."
+          );
+
+        } catch (error) {
+          showToastFromError(error);
+        }
+      };
+    }
+  );
+
+  $$("[data-edit]").forEach(
+    (button) => {
+      button.onclick = () =>
+        openTaskModal(
+          state.tasks.find(
+            (task) =>
+              String(task.id) ===
+              button.dataset.edit
+          )
+        );
+    }
+  );
+}
+
+function openTaskModal(task = null) {
+  const root =
+    $("#modal-root");
+
+  root.innerHTML = `
+    <div class="modal-backdrop">
+
+      <div class="modal">
+
+        <div class="modal-head">
+          <h3>
+            ${task ? "Editar tasca" : "Nova tasca"}
+          </h3>
+
+          <button
+            class="close"
+            data-close
+          >
+            ×
+          </button>
+        </div>
+
+        <form
+          id="task-form"
+          class="form-grid two"
+        >
+
+          <label>
+            Nom
+            <input
+              name="name"
+              required
+              value="${esc(
+                task?.name || ""
+              )}"
+            >
+          </label>
+
+          <label>
+            Assignatura
+            <input
+              name="subject"
+              required
+              value="${esc(
+                task?.subject || ""
+              )}"
+            >
+          </label>
+
+          <label>
+            Data d'entrega
+            <input
+              type="date"
+              name="due_date"
+              value="${esc(
+                task?.due_date || ""
+              )}"
+            >
+          </label>
+
+          <label>
+            Temps estimat (min)
+            <input
+              type="number"
+              min="5"
+              max="1440"
+              name="estimated_minutes"
+              value="${task?.estimated_minutes || 30}"
+            >
+          </label>
+
+          <label>
+            Dificultat
+
+            <select name="difficulty">
+              <option
+                value="baixa"
+                ${task?.difficulty === "baixa" ? "selected" : ""}
+              >
+                Baixa
+              </option>
+
+              <option
+                value="mitjana"
+                ${!task || task?.difficulty === "mitjana" ? "selected" : ""}
+              >
+                Mitjana
+              </option>
+
+              <option
+                value="alta"
+                ${task?.difficulty === "alta" ? "selected" : ""}
+              >
+                Alta
+              </option>
+            </select>
+          </label>
+
+          <label>
+            Estat
+
+            <select name="status">
+              <option
+                value="pendent"
+                ${!task || task?.status === "pendent" ? "selected" : ""}
+              >
+                Pendent
+              </option>
+
+              <option
+                value="en procés"
+                ${task?.status === "en procés" ? "selected" : ""}
+              >
+                En procés
+              </option>
+
+              <option
+                value="completada"
+                ${task?.status === "completada" ? "selected" : ""}
+              >
+                Completada
+              </option>
+            </select>
+          </label>
+
+          <label
+            style="grid-column:1/-1"
+          >
+            Descripció
+
+            <textarea
+              name="description"
+              placeholder="Què has de fer?"
+            >${esc(
+              task?.description || ""
+            )}</textarea>
+          </label>
+
+          <div
+            class="modal-actions"
+            style="grid-column:1/-1"
           >
 
-            <div class="exam-date">
-
-              <div>
-                <strong>
-                  ${escapeHtml(
-                    String(exam.exam_date)
-                      .slice(8, 10)
-                  )}
-                </strong>
-
-                <small>
-                  ${escapeHtml(
-                    new Intl.DateTimeFormat(
-                      "ca-ES",
-                      { month: "short" }
-                    ).format(
-                      new Date(
-                        `${String(exam.exam_date).slice(0,10)}T12:00:00`
-                      )
-                    )
-                  )}
-                </small>
-              </div>
-
-            </div>
-
-
-            <h3>
-              ${escapeHtml(exam.subject)}
-            </h3>
-
-            <p>
-              ${escapeHtml(dateLabel)}
-              ·
-              ${escapeHtml(
-                difficultyLabel(
-                  exam.difficulty
-                )
-              )}
-            </p>
-
-            <p>
-              ${
-                exam.syllabus
-                  ? escapeHtml(
-                      exam.syllabus
-                    )
-                  : "Sense temari afegit."
-              }
-            </p>
-
-
-            <div
-              style="
-                display:flex;
-                gap:7px;
-                margin-top:13px
-              "
+            <button
+              type="button"
+              class="btn"
+              data-close
             >
+              Cancel·lar
+            </button>
 
-              <button
-                class="btn btn-outline"
-                data-action="edit-exam"
-                data-id="${exam.id}"
-              >
-                Editar
-              </button>
-
-              <button
-                class="btn btn-outline"
-                data-action="delete-exam"
-                data-id="${exam.id}"
-              >
-                Eliminar
-              </button>
-
-            </div>
-
-          </article>
-        `;
-
-      }).join("");
-  }
-
-
-  function openExamModal(exam = null) {
-
-    const editing = Boolean(exam);
-
-    openModal({
-      title:
-        editing
-          ? "Editar examen"
-          : "Nou examen",
-
-      body: `
-        <form id="exam-modal-form">
-
-          <div class="form-grid">
-
-            <div class="form-field">
-              <label>Assignatura</label>
-
-              <input
-                name="subject"
-                required
-                value="${escapeHtml(
-                  exam?.subject || ""
-                )}"
-                placeholder="Física"
-              >
-            </div>
-
-
-            <div class="form-field">
-              <label>Data de l'examen</label>
-
-              <input
-                name="exam_date"
-                type="date"
-                required
-                value="${escapeHtml(
-                  exam?.exam_date
-                    ? String(exam.exam_date).slice(0,10)
-                    : ""
-                )}"
-              >
-            </div>
-
-
-            <div class="form-field">
-              <label>Dificultat</label>
-
-              <select name="difficulty">
-
-                <option
-                  value="baixa"
-                  ${
-                    difficultyValue(exam?.difficulty)
-                      === "baixa"
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  Baixa
-                </option>
-
-                <option
-                  value="mitjana"
-                  ${
-                    difficultyValue(exam?.difficulty)
-                      === "mitjana"
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  Mitjana
-                </option>
-
-                <option
-                  value="alta"
-                  ${
-                    difficultyValue(exam?.difficulty)
-                      === "alta"
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  Alta
-                </option>
-
-              </select>
-            </div>
-
-
-            <div class="form-field">
-              <label>Temps d'estudi recomanat</label>
-
-              <input
-                name="study_minutes"
-                type="number"
-                min="1"
-                value="${escapeHtml(
-                  exam?.study_minutes || 120
-                )}"
-              >
-            </div>
-
-
-            <div class="form-field full">
-
-              <label>Temari</label>
-
-              <textarea
-                name="syllabus"
-                placeholder="Temes, capítols, conceptes..."
-              >${escapeHtml(
-                exam?.syllabus || ""
-              )}</textarea>
-
-            </div>
+            <button
+              class="btn primary"
+            >
+              Guardar tasca
+            </button>
 
           </div>
 
         </form>
-      `,
 
-      footer: `
+      </div>
 
-        ${
-          editing
-            ? `
+    </div>
+  `;
+
+  $$("[data-close]", root)
+    .forEach(
+      (button) => {
+        button.onclick =
+          () =>
+            root.innerHTML = "";
+      }
+    );
+
+  $("#task-form").onsubmit =
+    async (event) => {
+      event.preventDefault();
+
+      const data =
+        Object.fromEntries(
+          new FormData(
+            event.target
+          ).entries()
+        );
+
+      data.estimated_minutes =
+        Number(
+          data.estimated_minutes
+        );
+
+      try {
+        if (task) {
+          await api(
+            `/api/tasks/${task.id}`,
+            {
+              method: "PATCH",
+              body: JSON.stringify(
+                data
+              )
+            }
+          );
+        } else {
+          await api(
+            "/api/tasks",
+            {
+              method: "POST",
+              body: JSON.stringify(
+                data
+              )
+            }
+          );
+        }
+
+        root.innerHTML = "";
+
+        await loadDashboard();
+
+        renderTasks();
+
+        toast(
+          task
+            ? "Tasca actualitzada."
+            : "Tasca creada."
+        );
+
+      } catch (error) {
+        showToastFromError(error);
+      }
+    };
+}
+
+
+/* ============================================================
+   EXÀMENS
+============================================================ */
+
+function renderExams() {
+  const box =
+    $("#exams-list");
+
+  if (!box) return;
+
+  if (!state.exams.length) {
+    box.innerHTML = `
+      <div
+        class="card empty-state"
+        style="
+          grid-column:1/-1;
+          min-height:260px
+        "
+      >
+        <span>□</span>
+        <b>
+          Encara no tens exàmens.
+        </b>
+        <small>
+          Afegeix la primera data
+          i prepara-la amb temps.
+        </small>
+      </div>
+    `;
+
+    return;
+  }
+
+  box.innerHTML =
+    state.exams
+      .map((exam) => {
+        const days =
+          daysUntil(
+            exam.exam_date
+          );
+
+        return `
+          <div
+            class="exam-card card ${
+              days <= 3
+                ? "urgent"
+                : ""
+            }"
+          >
+
+            <div class="exam-accent"></div>
+
+            <p class="eyebrow">
+              ${esc(exam.subject)}
+            </p>
+
+            <h3>
+              ${fullDate(
+                exam.exam_date
+              )}
+            </h3>
+
+            <div class="exam-date">
+              ${
+                days < 0
+                  ? "Passat"
+                  : days === 0
+                    ? "Avui"
+                    : days === 1
+                      ? "Demà"
+                      : `D'aquí a ${days} dies`
+              }
+            </div>
+
+            <div class="exam-days">
+              ${Math.max(0, days)}
+              <span
+                style="
+                  font-size:11px;
+                  color:#6f7480
+                "
+              >
+                dies
+              </span>
+            </div>
+
+            <small>
+              ${esc(
+                exam.syllabus ||
+                "Sense temari indicat"
+              )}
+
+              <br>
+
+              Dificultat:
+              ${esc(
+                exam.difficulty ||
+                "mitjana"
+              )}
+              ·
+              ${exam.study_minutes || 0}
+              min de preparació
+            </small>
+
+            <div class="exam-actions">
               <button
-                class="btn btn-outline"
-                id="delete-exam-modal"
+                class="delete-link"
+                data-exam-delete="${exam.id}"
               >
                 Eliminar
               </button>
-            `
-            : ""
-        }
+            </div>
 
-        <button
-          class="btn btn-outline"
-          data-close-modal
+          </div>
+        `;
+      })
+      .join("");
+
+  $$("[data-exam-delete]")
+    .forEach(
+      (button) => {
+        button.onclick =
+          async () => {
+            if (
+              !confirm(
+                "Vols eliminar aquest examen?"
+              )
+            ) {
+              return;
+            }
+
+            try {
+              await api(
+                `/api/exams/${button.dataset.examDelete}`,
+                {
+                  method: "DELETE"
+                }
+              );
+
+              await loadDashboard();
+
+              renderExams();
+
+              toast(
+                "Examen eliminat."
+              );
+
+            } catch (error) {
+              showToastFromError(
+                error
+              );
+            }
+          };
+      }
+    );
+}
+
+function openExamModal() {
+  const root =
+    $("#modal-root");
+
+  root.innerHTML = `
+    <div class="modal-backdrop">
+
+      <div class="modal">
+
+        <div class="modal-head">
+          <h3>Nou examen</h3>
+
+          <button
+            class="close"
+            data-close
+          >
+            ×
+          </button>
+        </div>
+
+        <form
+          id="exam-form"
+          class="form-grid two"
         >
-          Cancel·lar
-        </button>
 
-        <button
-          class="btn btn-yellow"
-          id="save-exam"
-        >
-          ${editing ? "Guardar canvis" : "Crear examen"}
-        </button>
+          <label>
+            Assignatura
+            <input
+              name="subject"
+              required
+            >
+          </label>
 
-      `
-    });
+          <label>
+            Data
+            <input
+              name="exam_date"
+              type="date"
+              required
+            >
+          </label>
 
+          <label>
+            Dificultat
 
-    $("#save-exam")
-      ?.addEventListener(
-        "click",
-        async () => {
+            <select name="difficulty">
 
-          const form =
-            $("#exam-modal-form");
+              <option value="baixa">
+                Baixa
+              </option>
 
-          const data =
-            Object.fromEntries(
-              new FormData(form).entries()
-            );
+              <option
+                value="mitjana"
+                selected
+              >
+                Mitjana
+              </option>
 
-          data.study_minutes =
-            Number(
-              data.study_minutes || 120
-            );
+              <option value="alta">
+                Alta
+              </option>
 
+            </select>
+          </label>
 
-          try {
+          <label>
+            Temps de preparació (min)
 
-            await api(
-              editing
-                ? `/api/exams/${exam.id}`
-                : "/api/exams",
-              {
-                method:
-                  editing
-                    ? "PUT"
-                    : "POST",
-                body: data
-              }
-            );
+            <input
+              type="number"
+              name="study_minutes"
+              value="120"
+              min="15"
+            >
+          </label>
 
-            closeModal();
+          <label
+            style="grid-column:1/-1"
+          >
+            Temari
 
-            await loadExams();
-            await loadDashboard();
+            <textarea
+              name="syllabus"
+              placeholder="Capítols, conceptes, exercicis..."
+            ></textarea>
+          </label>
 
-            showToast(
-              editing
-                ? "Examen actualitzat."
-                : "Examen creat.",
-              "success"
-            );
+          <div
+            class="modal-actions"
+            style="grid-column:1/-1"
+          >
 
-          } catch (error) {
+            <button
+              type="button"
+              class="btn"
+              data-close
+            >
+              Cancel·lar
+            </button>
 
-            showError(error);
+            <button
+              class="btn primary"
+            >
+              Afegir examen
+            </button>
 
-          }
+          </div>
 
-        }
-      );
+        </form>
 
+      </div>
 
-    $("#delete-exam-modal")
-      ?.addEventListener(
-        "click",
-        async () => {
+    </div>
+  `;
 
-          if (
-            !confirm(
-              "Vols eliminar aquest examen?"
+  $$("[data-close]", root)
+    .forEach(
+      (button) => {
+        button.onclick =
+          () =>
+            root.innerHTML = "";
+      }
+    );
+
+  $("#exam-form").onsubmit =
+    async (event) => {
+      event.preventDefault();
+
+      const data =
+        Object.fromEntries(
+          new FormData(
+            event.target
+          ).entries()
+        );
+
+      data.study_minutes =
+        Number(
+          data.study_minutes
+        );
+
+      try {
+        await api(
+          "/api/exams",
+          {
+            method: "POST",
+            body: JSON.stringify(
+              data
             )
-          ) {
-            return;
           }
+        );
 
-          try {
+        root.innerHTML = "";
 
-            await api(
-              `/api/exams/${exam.id}`,
-              {
-                method: "DELETE"
-              }
-            );
+        await loadDashboard();
 
-            closeModal();
+        renderExams();
 
-            await loadExams();
-            await loadDashboard();
+        toast(
+          "Examen afegit."
+        );
 
-            showToast(
-              "Examen eliminat.",
-              "success"
-            );
-
-          } catch (error) {
-
-            showError(error);
-
-          }
-
-        }
-      );
-  }
+      } catch (error) {
+        showToastFromError(error);
+      }
+    };
+}
 
 
-  /* =======================================================
-     CLASSES
-  ======================================================= */
+/* ============================================================
+   CLASSES
+============================================================ */
 
-  async function loadClasses() {
-
+async function loadClasses() {
+  try {
     const data =
       await api("/api/classes");
 
@@ -2080,1202 +1537,1519 @@
       data.classes || [];
 
     renderClasses();
-    renderDashboardClasses();
+
+  } catch (error) {
+    showToastFromError(error);
+  }
+}
+
+function renderClasses() {
+  const actions =
+    $("#class-actions");
+
+  if (!actions) return;
+
+  if (
+    state.user.role ===
+    "professor"
+  ) {
+    actions.innerHTML = `
+      <button
+        class="btn primary"
+        id="new-class"
+      >
+        ＋ Crear classe
+      </button>
+    `;
+  } else {
+    actions.innerHTML = `
+      <button
+        class="btn primary"
+        id="join-class"
+      >
+        ＋ Unir-me amb un codi
+      </button>
+    `;
   }
 
+  if (
+    state.user.role ===
+    "professor"
+  ) {
+    $("#new-class").onclick =
+      () => openClassCreate();
+  } else {
+    $("#join-class").onclick =
+      () => openJoinModal();
+  }
 
-  function renderClassCard(classroom) {
+  const box =
+    $("#classes-list");
 
-    const isRed =
-      String(classroom.id || "")
-        .endsWith("2");
+  const detail =
+    $("#class-detail");
 
-    const isYellow =
-      String(classroom.id || "")
-        .endsWith("3");
+  detail?.classList.add(
+    "hidden"
+  );
 
+  box?.classList.remove(
+    "hidden"
+  );
 
-    const teacher =
-      classroom.teacher_name ||
-      classroom.teacher ||
-      "Professor";
-
-
-    const count =
-      classroom.student_count ??
-      classroom.students_count ??
-      null;
-
-
-    return `
-      <article
-        class="class-card"
-        data-class-id="${classroom.id}"
+  if (!state.classes.length) {
+    box.innerHTML = `
+      <div
+        class="card empty-state"
+        style="
+          grid-column:1/-1;
+          min-height:260px
+        "
       >
+        <span>⌘</span>
 
-        <div
-          class="class-cover ${
-            isRed
-              ? "red"
-              : isYellow
-                ? "yellow"
-                : ""
-          }"
-        >
+        <b>
+          Encara no tens classes.
+        </b>
 
-          <h3>
-            ${escapeHtml(
-              classroom.name
-            )}
-          </h3>
+        <small>
+          ${
+            state.user.role === "professor"
+              ? "Crea la primera classe i comparteix el codi."
+              : "Demana el codi de 6 caràcters al teu professor."
+          }
+        </small>
+      </div>
+    `;
 
-          <small>
-            ${escapeHtml(
-              classroom.subject ||
-              teacher
-            )}
-          </small>
+    return;
+  }
 
-        </div>
+  box.innerHTML =
+    state.classes
+      .map(
+        (classroom) => `
+          <div class="class-card card">
 
+            <p class="eyebrow">
+              ${
+                classroom.membership ===
+                "professor"
+                  ? "LA TEVA CLASSE"
+                  : "CLASSE"
+              }
+            </p>
 
-        <div class="class-body">
+            <h3>
+              ${esc(
+                classroom.name
+              )}
+            </h3>
 
-          <div class="class-meta">
-
-            <span>
-              Codi:
-              <strong>
-                ${escapeHtml(
-                  classroom.code || "—"
-                )}
-              </strong>
+            <span class="class-code">
+              ${esc(
+                classroom.code
+              )}
             </span>
 
-            ${
-              count !== null
-                ? `<span>${count} alumnes</span>`
-                : ""
-            }
+            <div class="class-meta">
+
+              <span>
+                ${
+                  classroom.membership ===
+                  "professor"
+                    ? "Tu ets el professor"
+                    : "Professor: " +
+                      esc(
+                        classroom.teacher_name ||
+                        classroom.teacher ||
+                        "Professor"
+                      )
+                }
+              </span>
+
+              <span>
+                ${
+                  classroom.student_count ||
+                  0
+                }
+                alumnes
+              </span>
+
+            </div>
+
+            <button
+              class="btn secondary"
+              data-open-class="${classroom.id}"
+            >
+              Entrar a la classe →
+            </button>
+
+          </div>
+        `
+      )
+      .join("");
+
+  $$("[data-open-class]")
+    .forEach(
+      (button) => {
+        button.onclick = () =>
+          openClassDetail(
+            button.dataset.openClass
+          );
+      }
+    );
+}
+
+
+/* ============================================================
+   CREAR CLASSE
+============================================================ */
+
+function openClassCreate() {
+  const root =
+    $("#modal-root");
+
+  root.innerHTML = `
+    <div class="modal-backdrop">
+
+      <div class="modal">
+
+        <div class="modal-head">
+          <h3>
+            Crear una classe
+          </h3>
+
+          <button
+            class="close"
+            data-close
+          >
+            ×
+          </button>
+        </div>
+
+        <form
+          id="class-form"
+          class="form-grid"
+        >
+
+          <label>
+            Nom de la classe
+
+            <input
+              name="name"
+              placeholder="2n Batx · Física"
+              required
+            >
+          </label>
+
+          <p
+            class="muted"
+            style="font-size:9px"
+          >
+            Generarem automàticament
+            un codi únic de 6 caràcters.
+          </p>
+
+          <div class="modal-actions">
+
+            <button
+              type="button"
+              class="btn"
+              data-close
+            >
+              Cancel·lar
+            </button>
+
+            <button
+              class="btn primary"
+            >
+              Crear classe
+            </button>
 
           </div>
 
-        </div>
+        </form>
+
+      </div>
+
+    </div>
+  `;
+
+  $$("[data-close]", root)
+    .forEach(
+      (button) => {
+        button.onclick =
+          () =>
+            root.innerHTML = "";
+      }
+    );
+
+  $("#class-form").onsubmit =
+    async (event) => {
+      event.preventDefault();
+
+      try {
+        const data =
+          await api(
+            "/api/classes",
+            {
+              method: "POST",
+              body: JSON.stringify(
+                Object.fromEntries(
+                  new FormData(
+                    event.target
+                  ).entries()
+                )
+              )
+            }
+          );
+
+        root.innerHTML = "";
+
+        await loadClasses();
+
+        toast(
+          `Classe creada · codi ${
+            data.class?.code ||
+            data.code ||
+            ""
+          }`
+        );
+
+      } catch (error) {
+        showToastFromError(error);
+      }
+    };
+}
 
 
-        <div class="class-footer">
+/* ============================================================
+   UNIR-SE A UNA CLASSE
+============================================================ */
+
+function openJoinModal() {
+  const root =
+    $("#modal-root");
+
+  root.innerHTML = `
+    <div class="modal-backdrop">
+
+      <div class="modal">
+
+        <div class="modal-head">
+
+          <h3>
+            Unir-me a una classe
+          </h3>
 
           <button
-            data-action="open-class"
-            data-id="${classroom.id}"
+            class="close"
+            data-close
           >
-            Entrar a la classe →
+            ×
           </button>
 
         </div>
 
-      </article>
-    `;
-  }
-
-
-  function renderClasses() {
-
-    const container =
-      $("#classes-list");
-
-    if (!container) return;
-
-
-    if (!state.classes.length) {
-
-      container.innerHTML = `
-        <div class="panel"
-             style="grid-column:1/-1">
-
-          <div class="empty-state">
-
-            <div class="empty-state-icon">
-              ⌘
-            </div>
-
-            <strong>
-              Encara no tens classes.
-            </strong>
-
-            <small>
-              ${
-                state.user?.role === "professor"
-                  ? "Crea la teva primera classe."
-                  : "Uneix-te a una classe amb el seu codi."
-              }
-            </small>
-
-          </div>
-
-        </div>
-      `;
-
-      return;
-    }
-
-
-    container.innerHTML =
-      state.classes
-        .map(renderClassCard)
-        .join("");
-  }
-
-
-  function openClassCreateModal() {
-
-    openModal({
-      title: "Crear classe",
-
-      body: `
-        <form id="class-create-form">
-
-          <div class="form-grid">
-
-            <div class="form-field full">
-
-              <label>Nom de la classe</label>
-
-              <input
-                name="name"
-                required
-                placeholder="Ex. Física 2n BAT"
-              >
-
-            </div>
-
-
-            <div class="form-field full">
-
-              <label>Assignatura</label>
-
-              <input
-                name="subject"
-                placeholder="Física"
-              >
-
-            </div>
-
-          </div>
-
-        </form>
-      `,
-
-      footer: `
-
-        <button
-          class="btn btn-outline"
-          data-close-modal
+        <form
+          id="join-form"
+          class="form-grid"
         >
-          Cancel·lar
-        </button>
 
-        <button
-          class="btn btn-yellow"
-          id="save-class"
-        >
-          Crear classe
-        </button>
-
-      `
-    });
-
-
-    $("#save-class")
-      ?.addEventListener(
-        "click",
-        async () => {
-
-          const form =
-            $("#class-create-form");
-
-          const data =
-            Object.fromEntries(
-              new FormData(form).entries()
-            );
-
-          try {
-
-            const result =
-              await api(
-                "/api/classes",
-                {
-                  method: "POST",
-                  body: data
-                }
-              );
-
-            closeModal();
-
-            await loadClasses();
-
-            showToast(
-              `Classe creada. Codi: ${result.class.code}`,
-              "success"
-            );
-
-          } catch (error) {
-
-            showError(error);
-
-          }
-
-        }
-      );
-  }
-
-
-  function openJoinClassModal() {
-
-    openModal({
-      title: "Unir-me a una classe",
-
-      body: `
-        <form id="join-class-form">
-
-          <div class="form-field">
-
-            <label>
-              Codi de la classe
-            </label>
+          <label>
+            Codi de la classe
 
             <input
               name="code"
               maxlength="6"
-              minlength="6"
-              required
-              placeholder="Ex. 195BT1"
               style="
                 text-transform:uppercase;
-                letter-spacing:.15em;
-                font-weight:800
+                font:700 18px monospace;
+                letter-spacing:.16em;
+                text-align:center
               "
+              placeholder="Q4R62Q"
+              required
             >
+          </label>
+
+          <p
+            class="muted"
+            style="font-size:9px"
+          >
+            El codi ha de tenir
+            exactament 6 lletres o números.
+          </p>
+
+          <div class="modal-actions">
+
+            <button
+              type="button"
+              class="btn"
+              data-close
+            >
+              Cancel·lar
+            </button>
+
+            <button
+              class="btn primary"
+            >
+              Unir-me
+            </button>
 
           </div>
 
         </form>
-      `,
 
-      footer: `
+      </div>
 
-        <button
-          class="btn btn-outline"
-          data-close-modal
-        >
-          Cancel·lar
-        </button>
+    </div>
+  `;
 
-        <button
-          class="btn btn-blue"
-          id="join-class-submit"
-        >
-          Unir-me
-        </button>
+  $$("[data-close]", root)
+    .forEach(
+      (button) => {
+        button.onclick =
+          () =>
+            root.innerHTML = "";
+      }
+    );
 
-      `
-    });
-
-
-    $("#join-class-submit")
-      ?.addEventListener(
-        "click",
-        async () => {
-
-          const form =
-            $("#join-class-form");
-
-          const data =
-            Object.fromEntries(
-              new FormData(form).entries()
-            );
-
-          data.code =
-            String(data.code || "")
-              .trim()
-              .toUpperCase();
-
-
-          try {
-
-            await api(
-              "/api/classes/join",
-              {
-                method: "POST",
-                body: data
-              }
-            );
-
-            closeModal();
-
-            await loadClasses();
-
-            showToast(
-              "T'has unit a la classe.",
-              "success"
-            );
-
-          } catch (error) {
-
-            showError(error);
-
-          }
-
-        }
-      );
-  }
-
-
-  async function openClassDetail(classId) {
-
-    try {
+  $("#join-form").onsubmit =
+    async (event) => {
+      event.preventDefault();
 
       const data =
-        await api(
-          `/api/classes/${classId}`
+        Object.fromEntries(
+          new FormData(
+            event.target
+          ).entries()
         );
 
-      state.currentClass = data;
+      data.code =
+        data.code
+          .toUpperCase()
+          .trim();
 
-      renderClassDetail(data);
+      try {
+        const result =
+          await api(
+            "/api/classes/join",
+            {
+              method: "POST",
+              body: JSON.stringify(
+                data
+              )
+            }
+          );
 
-      $("#class-detail")
-        ?.classList.remove("hidden");
+        root.innerHTML = "";
 
-      $("#class-detail")
-        ?.scrollIntoView({
-          behavior: "smooth",
-          block: "start"
-        });
+        await loadClasses();
 
-    } catch (error) {
+        toast(
+          `T'has unit a ${
+            result.class.name
+          }.`
+        );
 
-      showError(error);
+      } catch (error) {
+        showToastFromError(error);
+      }
+    };
+}
 
-    }
-  }
 
+/* ============================================================
+   AULA COMPLETA
+============================================================ */
 
-  function renderClassDetail(data) {
-
-    const container =
-      $("#class-detail");
-
-    if (!container) return;
-
+async function openClassDetail(
+  classId
+) {
+  try {
+    const data =
+      await api(
+        `/api/classes/${classId}`
+      );
 
     const classroom =
       data.class;
 
-    const teacher =
-      classroom.teacher_name ||
-      classroom.teacher ||
-      "Professor";
+    $("#classes-list")
+      ?.classList.add(
+        "hidden"
+      );
 
+    $("#class-actions")
+      ?.classList.add(
+        "hidden"
+      );
 
-    const isTeacher =
-      state.user?.role === "professor";
+    const box =
+      $("#class-detail");
 
+    box.classList.remove(
+      "hidden"
+    );
 
     const content =
       data.content || [];
 
+    const canManage =
+      Number(
+        classroom.teacher_id
+      ) ===
+      Number(
+        state.user?.id
+      );
 
-    const students =
-      data.students || [];
+    const announcements =
+      content.filter(
+        (item) =>
+          (
+            item.content_type ||
+            item.kind
+          ) === "avis"
+      );
 
+    const work =
+      content.filter(
+        (item) =>
+          String(
+            item.content_type ||
+            item.kind ||
+            ""
+          ) !== "avis"
+      );
 
-    container.innerHTML = `
+    box.innerHTML = `
+      <div class="classroom-shell">
 
-      <div class="class-detail-header">
+        <div class="classroom-banner">
 
-        <div>
+          <div>
 
-          <div class="eyebrow light">
-            AULA DIGITAL
-          </div>
+            <button
+              class="classroom-back"
+              id="back-classes"
+            >
+              ← Classes
+            </button>
 
-          <h2>
-            ${escapeHtml(
-              classroom.name
-            )}
-          </h2>
-
-          <div class="class-code">
-            Codi ${escapeHtml(
-              classroom.code
-            )}
-            ·
-            ${escapeHtml(teacher)}
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <div
-        style="
-          display:grid;
-          grid-template-columns:minmax(0,1fr) 280px;
-          gap:16px;
-          margin-top:16px
-        "
-      >
-
-        <div class="panel">
-
-          <div class="panel-head">
-
-            <div>
-
-              <div class="eyebrow">
-                CLASSE
-              </div>
-
-              <h2>
-                Activitat
-              </h2>
-
+            <div class="classroom-kicker">
+              AULA DIGITAL
             </div>
 
-            ${
-              isTeacher
-                ? `
-                  <button
-                    class="btn btn-yellow"
-                    id="new-class-content"
-                  >
-                    ＋ Publicar
-                  </button>
-                `
-                : ""
-            }
+            <h2>
+              ${esc(
+                classroom.name
+              )}
+            </h2>
 
-          </div>
+            <p>
+              ${esc(
+                classroom.teacher_name ||
+                classroom.teacher ||
+                ""
+              )}
 
+              · Codi
 
-          <div
-            style="padding:10px 16px 16px"
-          >
-
-            ${
-              content.length
-                ? content.map(renderClassContent).join("")
-                : `
-                  <div class="empty-state">
-
-                    <div class="empty-state-icon">
-                      ◫
-                    </div>
-
-                    <strong>
-                      Encara no hi ha activitat.
-                    </strong>
-
-                    <small>
-                      ${
-                        isTeacher
-                          ? "Publica un avís, deures o examen."
-                          : "Quan el professor publiqui contingut apareixerà aquí."
-                      }
-                    </small>
-
-                  </div>
-                `
-            }
-
-          </div>
-
-        </div>
-
-
-        <div class="panel">
-
-          <div class="panel-head">
-
-            <div>
-
-              <div class="eyebrow">
-                CLASSE
-              </div>
-
-              <h2>
-                Informació
-              </h2>
-
-            </div>
-
-          </div>
-
-
-          <div
-            style="padding:16px"
-          >
-
-            <p style="margin-top:0;color:var(--text-muted);font-size:12px">
-              ${
-                classroom.subject
-                  ? escapeHtml(classroom.subject)
-                  : "Sense assignatura indicada."
-              }
+              <strong>
+                ${esc(
+                  classroom.code
+                )}
+              </strong>
             </p>
 
+          </div>
 
-            <div
-              style="
-                padding:11px;
-                background:rgba(255,255,255,.035);
-                border:1px solid var(--border);
-                border-radius:9px
-              "
-            >
+          <div class="classroom-code">
+            ${esc(
+              classroom.code
+            )}
+          </div>
 
-              <small style="color:var(--text-muted)">
-                Codi de classe
-              </small>
+        </div>
 
-              <strong
-                style="
-                  display:block;
-                  margin-top:3px;
-                  letter-spacing:.12em
-                "
-              >
-                ${escapeHtml(
+        <nav class="classroom-tabs">
+
+          <button
+            class="class-tab active"
+            data-tab="stream"
+          >
+            Tauler
+          </button>
+
+          <button
+            class="class-tab"
+            data-tab="work"
+          >
+            Treball de classe
+          </button>
+
+          <button
+            class="class-tab"
+            data-tab="people"
+          >
+            Persones
+          </button>
+
+        </nav>
+
+        <div class="classroom-grid">
+
+          <aside class="classroom-aside">
+
+            <div class="classroom-card">
+
+              <h4>
+                Codi de la classe
+              </h4>
+
+              <strong class="code-large">
+                ${esc(
                   classroom.code
                 )}
               </strong>
 
+              <button
+                class="btn secondary"
+                id="copy-class-code"
+              >
+                Copiar codi
+              </button>
+
             </div>
 
+            <div class="classroom-card">
 
-            ${
-              isTeacher
-                ? `
-                  <div style="margin-top:14px">
+              <h4>
+                Pròximes entregues
+              </h4>
 
-                    <div class="eyebrow">
-                      ALUMNES
-                    </div>
+              ${
+                work.length
+                  ? work
+                      .slice(0, 4)
+                      .map(
+                        (item) => `
+                          <div class="upcoming-item">
 
-                    <div style="margin-top:8px">
+                            <b>
+                              ${esc(
+                                item.title
+                              )}
+                            </b>
 
-                      ${
-                        students.length
-                          ? students.map(
-                              student => `
-                                <div
-                                  style="
-                                    display:flex;
-                                    align-items:center;
-                                    gap:8px;
-                                    padding:8px 0;
-                                    border-bottom:1px solid var(--border)
-                                  "
-                                >
+                            <small>
+                              ${
+                                item.event_date
+                                  ? fmtDate(
+                                      item.event_date
+                                    )
+                                  : "Sense data"
+                              }
+                            </small>
 
-                                  <span
-                                    class="avatar"
-                                    style="
-                                      width:27px;
-                                      height:27px;
-                                      font-size:9px
-                                    "
-                                  >
-                                    ${escapeHtml(
-                                      initials(
-                                        student.username ||
-                                        student.name
-                                      )
+                          </div>
+                        `
+                      )
+                      .join("")
+                  : `
+                    <small class="muted">
+                      No hi ha cap entrega.
+                    </small>
+                  `
+              }
+
+            </div>
+
+          </aside>
+
+          <main class="classroom-main">
+
+            <section
+              class="class-pane active"
+              data-pane="stream"
+            >
+
+              ${
+                canManage
+                  ? `
+                    <button
+                      class="btn primary classroom-publish"
+                      id="new-content"
+                    >
+                      ＋ Nova publicació
+                    </button>
+                  `
+                  : ""
+              }
+
+              <div class="stream-list">
+
+                ${
+                  announcements.length
+                    ? announcements
+                        .map(
+                          (item) => `
+                            <article class="class-post">
+
+                              <div class="post-avatar">
+                                ${initials(
+                                  item.author_name ||
+                                  classroom.teacher_name ||
+                                  "P"
+                                )}
+                              </div>
+
+                              <div>
+
+                                <div class="post-meta">
+
+                                  <b>
+                                    ${esc(
+                                      item.author_name ||
+                                      classroom.teacher_name ||
+                                      "Professor"
                                     )}
-                                  </span>
+                                  </b>
 
-                                  <span
-                                    style="font-size:10px"
-                                  >
-                                    ${escapeHtml(
-                                      student.username ||
-                                      student.name ||
-                                      "Alumne"
+                                  <span>
+                                    ${fmtDate(
+                                      item.created_at
                                     )}
                                   </span>
 
                                 </div>
-                              `
-                            ).join("")
-                          : `
-                            <small
-                              style="color:var(--text-muted)"
-                            >
-                              Encara no hi ha alumnes.
-                            </small>
+
+                                <h3>
+                                  ${esc(
+                                    item.title
+                                  )}
+                                </h3>
+
+                                <p>
+                                  ${esc(
+                                    item.body || ""
+                                  )}
+                                </p>
+
+                                ${
+                                  item.event_date
+                                    ? `
+                                      <div class="post-date">
+                                        📅
+                                        ${fmtDate(
+                                          item.event_date
+                                        )}
+                                      </div>
+                                    `
+                                    : ""
+                                }
+
+                              </div>
+
+                            </article>
                           `
-                      }
+                        )
+                        .join("")
+                    : `
+                      <div class="class-empty">
 
-                    </div>
+                        <strong>
+                          Encara no hi ha anuncis.
+                        </strong>
 
-                  </div>
-                `
-                : ""
-            }
+                        <span>
+                          Quan el professor
+                          publiqui alguna cosa,
+                          apareixerà aquí.
+                        </span>
 
-          </div>
+                      </div>
+                    `
+                }
+
+              </div>
+
+            </section>
+
+            <section
+              class="class-pane"
+              data-pane="work"
+            >
+
+              <div class="work-list">
+
+                ${
+                  work.length
+                    ? work
+                        .map(
+                          (item) => `
+                            <article class="work-card">
+
+                              <span class="work-type">
+                                ${esc(
+                                  item.content_type ||
+                                  item.kind ||
+                                  "Activitat"
+                                )}
+                              </span>
+
+                              <h3>
+                                ${esc(
+                                  item.title
+                                )}
+                              </h3>
+
+                              <p>
+                                ${esc(
+                                  item.body || ""
+                                )}
+                              </p>
+
+                              <small>
+                                ${
+                                  item.event_date
+                                    ? "Data: " +
+                                      fmtDate(
+                                        item.event_date
+                                      )
+                                    : "Sense data"
+                                }
+                              </small>
+
+                            </article>
+                          `
+                        )
+                        .join("")
+                    : `
+                      <div class="class-empty">
+
+                        <strong>
+                          No hi ha treball de classe.
+                        </strong>
+
+                        <span>
+                          Els deures i activitats
+                          publicats pel professor
+                          apareixeran aquí.
+                        </span>
+
+                      </div>
+                    `
+                }
+
+              </div>
+
+            </section>
+
+            <section
+              class="class-pane"
+              data-pane="people"
+            >
+
+              <div class="people-card">
+
+                <h3>
+                  Professor
+                </h3>
+
+                <div class="person-row">
+
+                  <span class="post-avatar">
+                    ${initials(
+                      classroom.teacher_name ||
+                      "P"
+                    )}
+                  </span>
+
+                  <b>
+                    ${esc(
+                      classroom.teacher_name ||
+                      "Professor"
+                    )}
+                  </b>
+
+                </div>
+
+                <h3>
+                  Alumnes ·
+                  ${data.students?.length || 0}
+                </h3>
+
+                ${
+                  data.students?.length
+                    ? data.students
+                        .map(
+                          (student) => `
+                            <div class="person-row">
+
+                              <span
+                                class="post-avatar small"
+                              >
+                                ${initials(
+                                  student.name ||
+                                  student.username
+                                )}
+                              </span>
+
+                              <span>
+                                ${esc(
+                                  student.name ||
+                                  student.username
+                                )}
+                              </span>
+
+                            </div>
+                          `
+                        )
+                        .join("")
+                    : `
+                      <p class="muted">
+                        Encara no hi ha alumnes.
+                      </p>
+                    `
+                }
+
+              </div>
+
+            </section>
+
+          </main>
 
         </div>
 
       </div>
     `;
 
+    $("#back-classes").onclick =
+      () => {
+        box.classList.add(
+          "hidden"
+        );
 
-    $("#new-class-content")
-      ?.addEventListener(
-        "click",
-        () =>
-          openClassContentModal(
-            classroom.id
-          )
-      );
-  }
+        $("#classes-list")
+          ?.classList.remove(
+            "hidden"
+          );
 
+        $("#class-actions")
+          ?.classList.remove(
+            "hidden"
+          );
+      };
 
-  function renderClassContent(item) {
+    $$(".class-tab", box)
+      .forEach(
+        (button) => {
+          button.onclick = () => {
 
-    const type =
-      String(
-        item.content_type ||
-        item.type ||
-        "avis"
-      ).toLowerCase();
-
-
-    let label = "Avís";
-
-    if (
-      type === "deure" ||
-      type === "deures"
-    ) {
-      label = "Deures";
-    }
-
-    if (
-      type === "examen"
-    ) {
-      label = "Examen";
-    }
-
-
-    return `
-      <article
-        style="
-          padding:15px 4px;
-          border-bottom:1px solid var(--border)
-        "
-      >
-
-        <div
-          style="
-            display:flex;
-            justify-content:space-between;
-            gap:10px
-          "
-        >
-
-          <div>
-
-            <span
-              class="role-badge"
-              style="
-                ${
-                  type === "examen"
-                    ? `
-                      color:#ff656a;
-                      background:var(--red-soft)
-                    `
-                    : ""
-                }
-              "
-            >
-              ${label}
-            </span>
-
-            <h3
-              style="
-                margin:8px 0 4px;
-                font-size:14px
-              "
-            >
-              ${escapeHtml(
-                item.title
-              )}
-            </h3>
-
-          </div>
-
-
-          <small
-            style="
-              color:var(--text-muted);
-              font-size:9px
-            "
-          >
-            ${escapeHtml(
-              item.created_at
-                ? formatDate(
-                    item.created_at
+            $$(".class-tab", box)
+              .forEach(
+                (tab) =>
+                  tab.classList.toggle(
+                    "active",
+                    tab === button
                   )
-                : ""
-            )}
-          </small>
+              );
+
+            $$(".class-pane", box)
+              .forEach(
+                (pane) =>
+                  pane.classList.toggle(
+                    "active",
+                    pane.dataset.pane ===
+                    button.dataset.tab
+                  )
+              );
+          };
+        }
+      );
+
+    const copyButton =
+      $("#copy-class-code");
+
+    if (copyButton) {
+      copyButton.onclick =
+        async () => {
+          try {
+            await navigator.clipboard.writeText(
+              classroom.code
+            );
+
+            toast(
+              "Codi copiat."
+            );
+
+          } catch {
+            toast(
+              "Codi: " +
+              classroom.code
+            );
+          }
+        };
+    }
+
+    if (
+      canManage &&
+      $("#new-content")
+    ) {
+      $("#new-content").onclick =
+        () =>
+          openContentModal(
+            classId
+          );
+    }
+
+  } catch (error) {
+    showToastFromError(error);
+  }
+}
+
+
+/* ============================================================
+   PUBLICAR CONTINGUT A LA CLASSE
+============================================================ */
+
+function openContentModal(
+  classId
+) {
+  const root =
+    $("#modal-root");
+
+  root.innerHTML = `
+    <div class="modal-backdrop">
+
+      <div class="modal">
+
+        <div class="modal-head">
+
+          <h3>
+            Publicar a la classe
+          </h3>
+
+          <button
+            class="close"
+            data-close
+          >
+            ×
+          </button>
 
         </div>
 
+        <form
+          id="content-form"
+          class="form-grid two"
+        >
 
-        ${
-          item.body
-            ? `
-              <p
-                style="
-                  margin:7px 0 0;
-                  color:var(--text-muted);
-                  font-size:11px;
-                  white-space:pre-wrap
-                "
-              >
-                ${escapeHtml(
-                  item.body
-                )}
-              </p>
-            `
-            : ""
-        }
+          <label>
+            Tipus
 
+            <select
+              name="kind"
+            >
+              <option value="deures">
+                Deures
+              </option>
 
-        ${
-          item.due_date
-            ? `
-              <small
-                style="
-                  display:block;
-                  margin-top:8px;
-                  color:var(--blue-bright);
-                  font-size:9px
-                "
-              >
-                Entrega:
-                ${escapeHtml(
-                  formatDate(
-                    item.due_date
-                  )
-                )}
-              </small>
-            `
-            : ""
-        }
+              <option value="examen">
+                Examen
+              </option>
 
-      </article>
-    `;
-  }
+              <option value="avis">
+                Avís
+              </option>
+            </select>
+          </label>
 
+          <label>
+            Títol
 
-  function openClassContentModal(classId) {
+            <input
+              name="title"
+              required
+              placeholder="Treball de laboratori"
+            >
+          </label>
 
-    openModal({
-      title: "Publicar a la classe",
+          <label
+            style="grid-column:1/-1"
+          >
+            Text
 
-      body: `
-        <form id="content-form">
+            <textarea
+              name="body"
+              placeholder="Instruccions, informació, recordatoris..."
+            ></textarea>
+          </label>
 
-          <div class="form-grid">
+          <label>
+            Data de l'esdeveniment
 
-            <div class="form-field">
+            <input
+              type="date"
+              name="event_date"
+            >
+          </label>
 
-              <label>Tipus</label>
+          <div
+            class="modal-actions"
+            style="grid-column:1/-1"
+          >
 
-              <select name="content_type">
+            <button
+              type="button"
+              class="btn"
+              data-close
+            >
+              Cancel·lar
+            </button>
 
-                <option value="avis">
-                  Avís
-                </option>
-
-                <option value="deures">
-                  Deures
-                </option>
-
-                <option value="examen">
-                  Examen
-                </option>
-
-              </select>
-
-            </div>
-
-
-            <div class="form-field">
-
-              <label>Data d'entrega</label>
-
-              <input
-                name="due_date"
-                type="date"
-              >
-
-            </div>
-
-
-            <div class="form-field full">
-
-              <label>Títol</label>
-
-              <input
-                name="title"
-                required
-                placeholder="Títol de la publicació"
-              >
-
-            </div>
-
-
-            <div class="form-field full">
-
-              <label>Descripció</label>
-
-              <textarea
-                name="body"
-                placeholder="Escriu la informació..."
-              ></textarea>
-
-            </div>
+            <button
+              class="btn primary"
+            >
+              Publicar
+            </button>
 
           </div>
 
         </form>
-      `,
 
-      footer: `
+      </div>
 
-        <button
-          class="btn btn-outline"
-          data-close-modal
-        >
-          Cancel·lar
-        </button>
+    </div>
+  `;
 
-        <button
-          class="btn btn-yellow"
-          id="publish-content"
-        >
-          Publicar
-        </button>
-
-      `
-    });
-
-
-    $("#publish-content")
-      ?.addEventListener(
-        "click",
-        async () => {
-
-          const form =
-            $("#content-form");
-
-          const data =
-            Object.fromEntries(
-              new FormData(form).entries()
-            );
-
-          try {
-
-            await api(
-              `/api/classes/${classId}/content`,
-              {
-                method: "POST",
-                body: data
-              }
-            );
-
-            closeModal();
-
-            await openClassDetail(
-              classId
-            );
-
-            showToast(
-              "Publicació creada.",
-              "success"
-            );
-
-          } catch (error) {
-
-            showError(error);
-
-          }
-
-        }
-      );
-  }
-
-
-  /* =======================================================
-     CALENDARI
-  ======================================================= */
-
-  function startOfWeek(date) {
-
-    const result =
-      new Date(date);
-
-    result.setHours(
-      0,
-      0,
-      0,
-      0
+  $$("[data-close]", root)
+    .forEach(
+      (button) => {
+        button.onclick =
+          () =>
+            root.innerHTML = "";
+      }
     );
 
-    const day =
-      result.getDay();
+  $("#content-form").onsubmit =
+    async (event) => {
+      event.preventDefault();
 
-    const mondayOffset =
-      day === 0
-        ? -6
-        : 1 - day;
-
-    result.setDate(
-      result.getDate() +
-      mondayOffset
-    );
-
-    return result;
-  }
-
-
-  function renderCalendar() {
-
-    const grid =
-      $("#calendar-grid");
-
-    if (!grid) return;
-
-
-    const base =
-      startOfWeek(new Date());
-
-    base.setDate(
-      base.getDate() +
-      state.calendarOffset * 7
-    );
-
-
-    const end =
-      new Date(base);
-
-    end.setDate(
-      end.getDate() + 6
-    );
-
-
-    $("#calendar-title").textContent =
-      `${formatDate(base, {
-        day: "numeric",
-        month: "short"
-      })} — ${formatDate(end, {
-        day: "numeric",
-        month: "short",
-        year: "numeric"
-      })}`;
-
-
-    const days = [];
-
-
-    for (let i = 0; i < 7; i++) {
-
-      const date =
-        new Date(base);
-
-      date.setDate(
-        base.getDate() + i
-      );
-
-      days.push(date);
-
-    }
-
-
-    const dayNames = [
-      "Dl",
-      "Dt",
-      "Dc",
-      "Dj",
-      "Dv",
-      "Ds",
-      "Dg"
-    ];
-
-
-    grid.innerHTML =
-      days.map((date, index) => {
-
-        const iso =
-          date.toISOString()
-            .slice(0, 10);
-
-
-        const today =
-          iso ===
-          new Date()
-            .toISOString()
-            .slice(0, 10);
-
-
-        const tasks =
-          state.tasks.filter(
-            task =>
-              String(task.due_date || "")
-                .slice(0, 10)
-              === iso
-          );
-
-
-        const exams =
-          state.exams.filter(
-            exam =>
-              String(exam.exam_date || "")
-                .slice(0, 10)
-              === iso
-          );
-
-
-        return `
-          <div
-            class="calendar-day ${
-              today ? "today" : ""
-            }"
-          >
-
-            <div class="calendar-day-name">
-              ${dayNames[index]}
-            </div>
-
-            <div class="calendar-day-number">
-              ${date.getDate()}
-            </div>
-
-
-            ${
-              exams.map(
-                exam => `
-                  <div class="calendar-event exam">
-                    Examen:
-                    ${escapeHtml(
-                      exam.subject
-                    )}
-                  </div>
-                `
-              ).join("")
-            }
-
-
-            ${
-              tasks.map(
-                task => `
-                  <div class="calendar-event task">
-                    ${escapeHtml(
-                      task.name
-                    )}
-                  </div>
-                `
-              ).join("")
-            }
-
-          </div>
-        `;
-
-      }).join("");
-  }
-
-
-  /* =======================================================
-     PLANIFICADOR
-  ======================================================= */
-
-  async function loadStudySessions() {
-
-    try {
-
-      const data =
+      try {
         await api(
-          "/api/study-sessions"
+          `/api/classes/${classId}/content`,
+          {
+            method: "POST",
+            body: JSON.stringify(
+              Object.fromEntries(
+                new FormData(
+                  event.target
+                ).entries()
+              )
+            )
+          }
         );
 
-      state.studySessions =
-        data.sessions || [];
+        root.innerHTML = "";
 
-    } catch {
-      state.studySessions = [];
+        await openClassDetail(
+          classId
+        );
+
+        toast(
+          "Publicació creada."
+        );
+
+      } catch (error) {
+        showToastFromError(error);
+      }
+    };
+}
+
+
+/* ============================================================
+   PLANIFICADOR
+============================================================ */
+
+function weekStart() {
+  const date =
+    new Date();
+
+  date.setDate(
+    date.getDate() -
+      (
+        (date.getDay() + 6) %
+        7
+      ) +
+      state.weekOffset * 7
+  );
+
+  date.setHours(
+    0,
+    0,
+    0,
+    0
+  );
+
+  return date;
+}
+
+function renderPlanner() {
+  const start =
+    weekStart();
+
+  const names = [
+    "Dl",
+    "Dt",
+    "Dc",
+    "Dj",
+    "Dv",
+    "Ds",
+    "Dg"
+  ];
+
+  const grid =
+    $("#week-grid");
+
+  if (!grid) return;
+
+  const items = [];
+
+  state.tasks.forEach(
+    (task) => {
+      if (task.due_date) {
+        items.push({
+          date:
+            task.due_date,
+          type: "task",
+          title:
+            task.name,
+          sub:
+            `${task.estimated_minutes || 30} min`
+        });
+      }
     }
-  }
+  );
 
+  state.exams.forEach(
+    (exam) => {
+      items.push({
+        date:
+          exam.exam_date,
+        type: "exam",
+        title:
+          "Examen · " +
+          exam.subject,
+        sub:
+          "Preparació"
+      });
+    }
+  );
 
-  function renderPlanner() {
+  grid.innerHTML =
+    names
+      .map(
+        (name, index) => {
 
-    renderPlannerWeek();
+          const date =
+            new Date(start);
 
-    renderPlanSessions();
-  }
+          date.setDate(
+            start.getDate() +
+            index
+          );
 
+          const iso =
+            date
+              .toISOString()
+              .slice(0, 10);
 
-  function renderPlannerWeek() {
+          const today =
+            iso ===
+            new Date()
+              .toISOString()
+              .slice(0, 10);
 
-    const grid =
-      $("#week-grid");
+          const dayItems =
+            items.filter(
+              (item) =>
+                item.date === iso
+            );
 
-    if (!grid) return;
+          return `
+            <div class="day-col">
 
+              <div
+                class="day-head ${
+                  today
+                    ? "today"
+                    : ""
+                }"
+              >
 
-    const base =
-      startOfWeek(new Date());
+                <small>
+                  ${name}
+                </small>
 
-    base.setDate(
-      base.getDate() +
-      state.plannerOffset * 7
-    );
+                <b>
+                  ${date.getDate()}
+                </b>
 
+              </div>
 
-    const end =
-      new Date(base);
+              <div class="day-items">
 
-    end.setDate(
-      end.getDate() + 6
-    );
+                ${dayItems
+                  .map(
+                    (item) => `
+                      <div
+                        class="plan-item ${item.type}"
+                      >
+                        ${esc(
+                          item.title
+                        )}
 
+                        <small>
+                          ${esc(
+                            item.sub
+                          )}
+                        </small>
+                      </div>
+                    `
+                  )
+                  .join("")}
 
+              </div>
+
+            </div>
+          `;
+        }
+      )
+      .join("");
+
+  if ($("#week-title")) {
     $("#week-title").textContent =
-      `${formatDate(base)} — ${formatDate(end)}`;
+      state.weekOffset === 0
+        ? "Aquesta setmana"
+        : state.weekOffset > 0
+          ? `D'aquí a ${state.weekOffset} setmana${
+              state.weekOffset > 1
+                ? "es"
+                : ""
+            }`
+          : `Fa ${Math.abs(
+              state.weekOffset
+            )} setmana${
+              Math.abs(
+                state.weekOffset
+              ) > 1
+                ? "es"
+                : ""
+            }`;
+  }
+
+  renderPlanSessions();
+}
+
+function renderPlanSessions() {
+  const box =
+    $("#plan-sessions");
+
+  if (!box) return;
+
+  const pending =
+    state.tasks
+      .filter(
+        (task) =>
+          task.status !==
+          "completada"
+      )
+      .sort(
+        (a, b) =>
+          daysUntil(
+            a.due_date
+          ) -
+          daysUntil(
+            b.due_date
+          )
+      )
+      .slice(0, 5);
+
+  box.innerHTML =
+    pending.length
+      ? pending
+          .map(
+            (task) => `
+              <div class="session-item">
+
+                <b>
+                  ${esc(
+                    task.name
+                  )}
+                </b>
+
+                <small>
+                  ${esc(
+                    task.subject || ""
+                  )}
+
+                  · proposta de
+                  ${Math.min(
+                    50,
+                    Math.max(
+                      25,
+                      task.estimated_minutes ||
+                      30
+                    )
+                  )}
+                  min
+
+                  ·
+                  ${fmtDate(
+                    task.due_date
+                  )}
+                </small>
+
+              </div>
+            `
+          )
+          .join("")
+      : `
+        <div
+          class="empty-state"
+          style="min-height:150px"
+        >
+          <span>✓</span>
+          <b>
+            Cap sessió pendent.
+          </b>
+          <small>
+            Gaudeix del marge.
+          </small>
+        </div>
+      `;
+}
+
+async function generatePlan() {
+  try {
+    await renderRecommendations(
+      false
+    );
+
+    navigate(
+      "planner"
+    );
+
+    toast(
+      "Pla adaptat segons les teves prioritats."
+    );
+
+  } catch (error) {
+    showToastFromError(error);
+  }
+}
 
 
-    const days = [];
+/* ============================================================
+   PROGRÉS
+============================================================ */
 
-
-    for (let i = 0; i < 7; i++) {
-
-      const date =
-        new Date(base);
-
-      date.setDate(
-        base.getDate() + i
+async function loadProgress() {
+  try {
+    const data =
+      await api(
+        "/api/progress"
       );
 
-      days.push(date);
+    const tasks =
+      data.tasks || {};
 
-    }
+    const study =
+      data.study || {};
 
+    const percentage =
+      tasks.total
+        ? Math.round(
+            tasks.completed *
+            100 /
+            tasks.total
+          )
+        : 0;
+
+    if ($("#progress-number"))
+      $("#progress-number").textContent =
+        percentage + "%";
+
+    if ($("#progress-bar"))
+      $("#progress-bar").style.width =
+        percentage + "%";
+
+    if ($("#progress-caption"))
+      $("#progress-caption").textContent =
+        `${tasks.completed || 0} de ${
+          tasks.total || 0
+        } tasques`;
+
+    const planned =
+      Number(
+        study.planned_minutes ??
+        data.planned_minutes ??
+        0
+      );
+
+    const completed =
+      Number(
+        study.completed_minutes ??
+        data.study_minutes ??
+        0
+      );
+
+    const studyPercentage =
+      planned
+        ? Math.min(
+            100,
+            Math.round(
+              completed *
+              100 /
+              planned
+            )
+          )
+        : 0;
+
+    if ($("#study-number"))
+      $("#study-number").textContent =
+        completed + " min";
+
+    if ($("#study-bar"))
+      $("#study-bar").style.width =
+        studyPercentage + "%";
+
+    if ($("#study-caption"))
+      $("#study-caption").textContent =
+        `${completed} min completats de ${planned} planificats`;
+
+    const week =
+      data.week || [];
+
+    const map = {};
+
+    week.forEach(
+      (item) => {
+        map[
+          String(
+            item.session_date
+          ).slice(5)
+        ] =
+          Number(
+            item.completed_minutes ??
+            item.minutes ??
+            0
+          );
+      }
+    );
 
     const names = [
       "Dl",
@@ -3287,2445 +3061,988 @@
       "Dg"
     ];
 
-
-    grid.innerHTML =
-      days.map(
-        (date, index) => {
-
-          const iso =
-            date.toISOString()
-              .slice(0, 10);
-
-
-          const sessions =
-            state.studySessions.filter(
-              session =>
-                String(
-                  session.session_date || ""
-                ).slice(0, 10)
-                === iso
-            );
-
-
-          const tasks =
-            state.tasks.filter(
-              task =>
-                String(
-                  task.due_date || ""
-                ).slice(0, 10)
-                === iso
-            );
-
-
-          return `
-            <div
-              class="calendar-day"
-            >
-
-              <div class="calendar-day-name">
-                ${names[index]}
-              </div>
-
-              <div class="calendar-day-number">
-                ${date.getDate()}
-              </div>
-
-              ${
-                sessions.map(
-                  session => `
-                    <div
-                      class="calendar-event"
-                    >
-                      Estudi
-                      ${session.minutes} min
-                    </div>
-                  `
-                ).join("")
-              }
-
-
-              ${
-                tasks.map(
-                  task => `
-                    <div
-                      class="calendar-event task"
-                    >
-                      ${escapeHtml(
-                        task.name
-                      )}
-                    </div>
-                  `
-                ).join("")
-              }
-
-            </div>
-          `;
-        }
-      ).join("");
-  }
-
-
-  function renderPlanSessions() {
-
-    const container =
-      $("#plan-sessions");
-
-    if (!container) return;
-
-
-    const upcomingTasks =
-      state.tasks
-        .filter(
-          task =>
-            task.status !== "completada"
-        )
-        .sort(sortTasks)
-        .slice(0, 5);
-
-
-    if (!upcomingTasks.length) {
-
-      container.innerHTML = `
-        <div class="empty-state">
-
-          <div class="empty-state-icon">
-            ◫
-          </div>
-
-          <strong>
-            Encara no hi ha sessions.
-          </strong>
-
-          <small>
-            Afegeix tasques o genera un pla amb IA.
-          </small>
-
-        </div>
-      `;
-
-      return;
-    }
-
-
-    container.innerHTML =
-      upcomingTasks.map(
-        task => `
-          <div class="plan-session">
-
-            <div class="plan-session-time">
-              ${
-                task.due_date
-                  ? formatDate(
-                      task.due_date
-                    )
-                  : "Avui"
-              }
-            </div>
-
-            <div class="plan-session-main">
-
-              <strong>
-                ${escapeHtml(
-                  task.name
-                )}
-              </strong>
-
-              <small>
-                ${escapeHtml(
-                  task.subject ||
-                  "Estudi"
-                )}
-              </small>
-
-            </div>
-
-            <span class="plan-session-tag">
-              ${escapeHtml(
-                String(
-                  task.estimated_minutes ||
-                  30
-                )
-              )} min
-            </span>
-
-          </div>
-        `
-      ).join("");
-  }
-
-
-  async function generatePlan() {
-
-    try {
-
-      const data =
-        await api(
-          "/api/ai/recommendations"
-        );
-
-
-      const recommendations =
-        data.recommendations || [];
-
-
-      if (!recommendations.length) {
-
-        showToast(
-          "No hi ha prou tasques per generar un pla.",
-          "info"
-        );
-
-        return;
-      }
-
-
-      const sessions =
-        recommendations
-          .slice(0, 5)
-          .map(item => ({
-            name:
-              item.task?.name ||
-              "Tasca",
-            reason:
-              item.reason ||
-              "Tasca pendent."
-          }));
-
-
-      openModal({
-        title: "Pla d'estudi recomanat",
-
-        body: `
-          <div>
-
-            <p
-              style="
-                color:var(--text-muted);
-                font-size:11px
-              "
-            >
-              La priorització s'ha calculat
-              a partir de les teves tasques actuals.
-            </p>
-
-            ${
-              sessions.map(
-                (session, index) => `
-                  <div
-                    style="
-                      padding:12px 0;
-                      border-bottom:1px solid var(--border)
-                    "
-                  >
-
-                    <strong>
-                      ${index + 1}.
-                      ${escapeHtml(
-                        session.name
-                      )}
-                    </strong>
-
-                    <small
-                      style="
-                        display:block;
-                        margin-top:4px;
-                        color:var(--text-muted)
-                      "
-                    >
-                      ${escapeHtml(
-                        session.reason
-                      )}
-                    </small>
-
-                  </div>
-                `
-              ).join("")
-            }
-
-          </div>
-        `,
-
-        footer: `
-          <button
-            class="btn btn-yellow"
-            data-close-modal
-          >
-            Entès
-          </button>
-        `
-      });
-
-
-    } catch (error) {
-
-      showError(error);
-
-    }
-  }
-
-
-  function openStudySessionModal() {
-
-    openModal({
-      title: "Afegir sessió d'estudi",
-
-      body: `
-        <form id="study-session-form">
-
-          <div class="form-grid">
-
-            <div class="form-field">
-              <label>Data</label>
-
-              <input
-                name="session_date"
-                type="date"
-                value="${
-                  new Date()
-                    .toISOString()
-                    .slice(0,10)
-                }"
-              >
-            </div>
-
-
-            <div class="form-field">
-              <label>Minuts</label>
-
-              <input
-                name="minutes"
-                type="number"
-                min="1"
-                value="30"
-              >
-            </div>
-
-
-            <div class="form-field full">
-
-              <label>Notes</label>
-
-              <textarea
-                name="notes"
-                placeholder="Què estudiaràs?"
-              ></textarea>
-
-            </div>
-
-          </div>
-
-        </form>
-      `,
-
-      footer: `
-
-        <button
-          class="btn btn-outline"
-          data-close-modal
-        >
-          Cancel·lar
-        </button>
-
-        <button
-          class="btn btn-blue"
-          id="save-study-session"
-        >
-          Afegir sessió
-        </button>
-
-      `
-    });
-
-
-    $("#save-study-session")
-      ?.addEventListener(
-        "click",
-        async () => {
-
-          const form =
-            $("#study-session-form");
-
-          const data =
-            Object.fromEntries(
-              new FormData(form).entries()
-            );
-
-          data.minutes =
-            Number(data.minutes || 0);
-
-
-          try {
-
-            await api(
-              "/api/study-sessions",
-              {
-                method: "POST",
-                body: data
-              }
-            );
-
-            closeModal();
-
-            await loadStudySessions();
-
-            renderPlanner();
-
-            await loadProgress();
-
-            showToast(
-              "Sessió d'estudi afegida.",
-              "success"
-            );
-
-          } catch (error) {
-
-            showError(error);
-
-          }
-
+    const values =
+      names.map(
+        (name, index) => {
+
+          const date =
+            new Date();
+
+          date.setDate(
+            date.getDate() -
+              (
+                (date.getDay() + 6) %
+                7
+              ) +
+              index
+          );
+
+          return {
+            name,
+            value:
+              map[
+                date
+                  .toISOString()
+                  .slice(5, 10)
+              ] || 0
+          };
         }
       );
-  }
-
-
-  /* =======================================================
-     PROGRÉS
-  ======================================================= */
-
-  async function loadProgress() {
-
-    try {
-
-      const data =
-        await api(
-          "/api/progress"
-        );
-
-      state.progress =
-        data;
-
-      renderProgress();
-
-    } catch (error) {
-
-      showError(error);
-
-    }
-  }
-
-
-  function renderProgress() {
-
-    const data =
-      state.progress;
-
-    if (!data) return;
-
-
-    const percentage =
-      Number(data.progress || 0);
-
-    const total =
-      Number(
-        data.total_tasks ||
-        data.tasks?.total ||
-        0
-      );
-
-    const completed =
-      Number(
-        data.completed_tasks ||
-        data.tasks?.completed ||
-        0
-      );
-
-    const study =
-      Number(
-        data.study_minutes ||
-        data.study?.completed ||
-        0
-      );
-
-
-    $("#progress-number").textContent =
-      `${percentage}%`;
-
-    $("#progress-bar").style.width =
-      `${Math.min(100, percentage)}%`;
-
-    $("#progress-caption").textContent =
-      `${completed} de ${total} tasques`;
-
-
-    $("#study-number").textContent =
-      `${study} min`;
-
-    $("#study-caption").textContent =
-      `${study} minuts registrats`;
-
-    $("#study-bar").style.width =
-      `${Math.min(
-        100,
-        study > 0
-          ? Math.min(100, study / 600 * 100)
-          : 0
-      )}%`;
-
-
-    renderProgressChart(
-      data.week ||
-      data.weekly ||
-      []
-    );
-
-
-    renderTestHistory();
-  }
-
-
-  function renderProgressChart(weekly) {
-
-    const container =
-      $("#progress-chart");
-
-    if (!container) return;
-
-
-    const map = {};
-
-    weekly.forEach(item => {
-
-      map[
-        String(item.session_date)
-          .slice(0,10)
-      ] =
-        Number(item.minutes || 0);
-
-    });
-
-
-    const days = [];
-
-    for (let i = 6; i >= 0; i--) {
-
-      const date =
-        new Date();
-
-      date.setDate(
-        date.getDate() - i
-      );
-
-      days.push(date);
-
-    }
-
 
     const max =
       Math.max(
-        60,
-        ...days.map(
-          date =>
-            map[
-              date.toISOString()
-                .slice(0,10)
-            ] || 0
+        30,
+        ...values.map(
+          (item) =>
+            item.value
         )
       );
 
+    if ($("#progress-chart")) {
+      $("#progress-chart").innerHTML =
+        values
+          .map(
+            (item) => `
+              <div class="bar-col">
 
-    container.innerHTML =
-      days.map(date => {
-
-        const iso =
-          date.toISOString()
-            .slice(0,10);
-
-        const minutes =
-          map[iso] || 0;
-
-        const height =
-          Math.max(
-            3,
-            Math.round(
-              minutes / max * 100
-            )
-          );
-
-
-        return `
-          <div
-            class="chart-bar"
-            style="height:${height}%"
-            title="${minutes} minuts"
-          >
-            <small>
-              ${date.toLocaleDateString(
-                "ca-ES",
-                { weekday:"short" }
-              )}
-            </small>
-          </div>
-        `;
-
-      }).join("");
-  }
-
-
-  async function loadTestHistory() {
-
-    try {
-
-      const data =
-        await api(
-          "/api/tests/history"
-        );
-
-      state.testHistory =
-        data.results || [];
-
-      renderTestHistory();
-
-    } catch {
-      state.testHistory = [];
-    }
-  }
-
-
-  function renderTestHistory() {
-
-    const container =
-      $("#test-history");
-
-    if (!container) return;
-
-
-    if (!state.testHistory.length) {
-
-      container.innerHTML = `
-        <div class="empty-state">
-
-          <div class="empty-state-icon">
-            ✓
-          </div>
-
-          <strong>
-            Encara no has fet cap test.
-          </strong>
-
-          <small>
-            Quan facis un test, el resultat apareixerà aquí.
-          </small>
-
-        </div>
-      `;
-
-      return;
-    }
-
-
-    container.innerHTML =
-      state.testHistory
-        .slice(0, 10)
-        .map(result => {
-
-          const percentage =
-            result.total
-              ? Math.round(
-                  result.score /
-                  result.total *
-                  100
-                )
-              : 0;
-
-
-          return `
-            <div
-              class="compact-item"
-            >
-
-              <span class="compact-marker">
-                ✓
-              </span>
-
-              <div>
-                <strong>
-                  ${escapeHtml(
-                    result.subject ||
-                    "Test"
-                  )}
-                </strong>
+                <div
+                  class="bar"
+                  style="
+                    height:${Math.max(
+                      3,
+                      item.value /
+                      max *
+                      100
+                    )}%
+                  "
+                ></div>
 
                 <small>
-                  ${result.score}/${result.total}
-                  ·
-                  ${percentage}%
+                  ${item.name}
                 </small>
+
               </div>
-
-            </div>
-          `;
-
-        })
-        .join("");
-  }
-
-
-  /* =======================================================
-     IA
-  ======================================================= */
-
-  function setAIMode(mode) {
-
-    state.aiMode =
-      String(mode || "DUBTE")
-        .toUpperCase();
-
-
-    $$("#ai-modes button")
-      .forEach(button => {
-
-        button.classList.toggle(
-          "active",
-          button.dataset.mode ===
-          state.aiMode
-        );
-
-      });
-
-
-    const input =
-      $("#ai-input");
-
-    if (!input) return;
-
-
-    const placeholders = {
-
-      DUBTE:
-        "Escriu el teu dubte...",
-
-      EXPLICAR:
-        "Quin tema vols que t'expliqui?",
-
-      ESTUDIAR:
-        "Què vols organitzar o estudiar?",
-
-      RESUMIR:
-        "Enganxa aquí el text que vols resumir...",
-
-      TEST:
-        "Sobre quin tema vols fer el test?"
-    };
-
-
-    input.placeholder =
-      placeholders[state.aiMode] ||
-      placeholders.DUBTE;
-  }
-
-
-  function focusAI() {
-
-    const input =
-      $("#ai-input");
-
-    if (input) {
-      setTimeout(
-        () => input.focus(),
-        100
-      );
+            `
+          )
+          .join("");
     }
-  }
 
-
-  function addChatMessage(
-    text,
-    type = "ai"
-  ) {
-
-    const log =
-      $("#chat-log");
-
-    if (!log) return;
-
-
-    const bubble =
-      document.createElement("div");
-
-    bubble.className =
-      `chat-bubble ${type}`;
-
-
-    bubble.innerHTML = `
-      <span>
-        ${type === "user" ? "F" : "✦"}
-      </span>
-
-      <div>
-
-        <b>
-          ${
-            type === "user"
-              ? escapeHtml(
-                  state.user?.username ||
-                  "Tu"
-                )
-              : "MiniClassroom IA"
-          }
-        </b>
-
-        <p>
-          ${escapeHtml(text)}
-        </p>
-
-      </div>
-    `;
-
-
-    log.appendChild(bubble);
-
-    log.scrollTop =
-      log.scrollHeight;
-  }
-
-
-  async function sendAIMessage(event) {
-
-    event.preventDefault();
-
-
-    const input =
-      $("#ai-input");
-
-    const message =
-      String(
-        input?.value || ""
-      ).trim();
-
-
-    if (!message) return;
-
-
-    addChatMessage(
-      message,
-      "user"
-    );
-
-
-    input.value = "";
-
-
-    const loading =
-      document.createElement("div");
-
-    loading.className =
-      "chat-bubble ai";
-
-    loading.innerHTML = `
-      <span>✦</span>
-
-      <div>
-
-        <b>
-          MiniClassroom IA
-        </b>
-
-        <p>
-          Pensant...
-        </p>
-
-      </div>
-    `;
-
-
-    $("#chat-log")
-      ?.appendChild(loading);
-
-
-    try {
-
-      const result =
-        await api(
-          "/api/ai",
-          {
-            method: "POST",
-            body: {
-              mode: state.aiMode,
-              message
-            }
-          }
-        );
-
-
-      loading.remove();
-
-
-      addChatMessage(
-        result.answer ||
-        "No he rebut cap resposta.",
-        "ai"
-      );
-
-
-    } catch (error) {
-
-      loading.remove();
-
-      addChatMessage(
-        error.message,
-        "ai"
-      );
-
-    }
-  }
-
-
-  async function loadRecommendations() {
-
-    try {
-
-      const data =
-        await api(
-          "/api/ai/recommendations"
-        );
-
-      const box =
-        $("#recommendation-box");
-
-      if (!box) return;
-
-
-      const recommendations =
-        data.recommendations || [];
-
-
-      if (!recommendations.length) {
-
-        box.innerHTML = `
-          <strong>
-            No tens tasques pendents.
-          </strong>
-
-          <p
-            style="
-              color:var(--text-muted);
-              font-size:11px
-            "
-          >
-            Quan afegeixis feina,
-            la IA podrà ajudar-te a prioritzar-la.
-          </p>
-        `;
-
-        return;
-      }
-
-
-      box.innerHTML = `
-
-        <div
-          style="
-            display:flex;
-            flex-direction:column;
-            gap:8px
-          "
-        >
-
-          ${
-            recommendations
-              .slice(0, 4)
+    const tests =
+      data.tests ||
+      [];
+
+    if ($("#test-history")) {
+      $("#test-history").innerHTML =
+        tests.length
+          ? tests
               .map(
-                (item, index) => `
-                  <div
-                    style="
-                      padding:10px;
-                      background:rgba(255,255,255,.035);
-                      border:1px solid var(--border);
-                      border-radius:8px
-                    "
-                  >
-
-                    <strong
-                      style="font-size:11px"
-                    >
-                      ${index + 1}.
-                      ${escapeHtml(
-                        item.task?.name ||
-                        "Tasca"
+                (test) => `
+                  <div class="test-row">
+                    <span>
+                      ${esc(
+                        test.topic ||
+                        test.subject ||
+                        "Test"
                       )}
-                    </strong>
+                    </span>
 
-                    <small
-                      style="
-                        display:block;
-                        margin-top:3px;
-                        color:var(--text-muted);
-                        font-size:9px
-                      "
-                    >
-                      ${escapeHtml(
-                        item.reason ||
-                        "Tasca pendent."
-                      )}
-                    </small>
-
+                    <span class="test-score">
+                      ${test.score}/${test.total}
+                    </span>
                   </div>
                 `
               )
               .join("")
-          }
+          : `
+            <p
+              class="muted"
+              style="font-size:10px"
+            >
+              Encara no has completat
+              cap test.
+            </p>
+          `;
+    }
+
+  } catch (error) {
+    showToastFromError(error);
+  }
+}
+
+
+/* ============================================================
+   IA CHAT
+============================================================ */
+
+function addChat(
+  role,
+  text
+) {
+  const element =
+    document.createElement(
+      "div"
+    );
+
+  element.className =
+    "chat-bubble " +
+    role;
+
+  element.innerHTML = `
+    <span class="bubble-icon">
+      ${
+        role === "ai"
+          ? "✦"
+          : "●"
+      }
+    </span>
+
+    <div>
+
+      <b>
+        ${
+          role === "ai"
+            ? "MiniClassroom IA"
+            : "Tu"
+        }
+      </b>
+
+      <p>
+        ${esc(text)}
+      </p>
+
+    </div>
+  `;
+
+  $("#chat-log")?.appendChild(
+    element
+  );
+
+  if ($("#chat-log")) {
+    $("#chat-log").scrollTop =
+      $("#chat-log").scrollHeight;
+  }
+}
+
+async function sendAI() {
+  const input =
+    $("#ai-input");
+
+  if (!input) return;
+
+  const message =
+    input.value.trim();
+
+  if (!message) return;
+
+  input.value = "";
+
+  addChat(
+    "user",
+    message
+  );
+
+  const loading =
+    document.createElement(
+      "div"
+    );
+
+  loading.className =
+    "chat-bubble ai";
+
+  loading.innerHTML = `
+    <span class="bubble-icon">
+      ✦
+    </span>
+
+    <div>
+      <b>
+        MiniClassroom IA
+      </b>
+
+      <p>
+        Estic pensant...
+      </p>
+    </div>
+  `;
+
+  $("#chat-log")?.appendChild(
+    loading
+  );
+
+  try {
+    const data =
+      await api(
+        "/api/ai",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            mode:
+              state.aiMode,
+            message
+          })
+        }
+      );
+
+    loading.remove();
+
+    addChat(
+      "ai",
+      data.answer ||
+        "No he pogut generar una resposta."
+    );
+
+  } catch (error) {
+    loading.remove();
+
+    showToastFromError(
+      error
+    );
+  }
+}
+
+
+/* ============================================================
+   TEST IA
+============================================================ */
+
+async function openTest() {
+  const root =
+    $("#modal-root");
+
+  root.innerHTML = `
+    <div class="modal-backdrop">
+
+      <div class="modal">
+
+        <div class="modal-head">
+
+          <h3>
+            Crear un test
+          </h3>
+
+          <button
+            class="close"
+            data-close
+          >
+            ×
+          </button>
 
         </div>
-      `;
 
+        <form
+          id="test-start"
+          class="form-grid"
+        >
 
-    } catch (error) {
-
-      showError(error);
-
-    }
-  }
-
-
-  /* =======================================================
-     TEST IA
-  ======================================================= */
-
-  async function openTestModal() {
-
-    openModal({
-      title: "Crear un test",
-
-      body: `
-
-        <div id="test-setup">
-
-          <div class="form-field">
-
-            <label>
-              Tema del test
-            </label>
+          <label>
+            Tema
 
             <input
-              id="test-topic"
-              placeholder="Ex. Revolució Francesa"
+              name="topic"
               required
+              placeholder="Revolució Industrial"
             >
+          </label>
+
+          <div class="modal-actions">
+
+            <button
+              type="button"
+              class="btn"
+              data-close
+            >
+              Cancel·lar
+            </button>
+
+            <button
+              class="btn primary"
+            >
+              Generar 5 preguntes
+            </button>
 
           </div>
 
-          <p
-            style="
-              color:var(--text-muted);
-              font-size:11px;
-              margin-bottom:0
-            "
-          >
-            La IA generarà 5 preguntes
-            amb quatre opcions cadascuna.
-          </p>
-
-        </div>
-
-        <div
-          id="test-content"
-          class="hidden"
-        ></div>
-
-      `,
-
-      footer: `
-
-        <button
-          class="btn btn-outline"
-          data-close-modal
-        >
-          Cancel·lar
-        </button>
-
-        <button
-          class="btn btn-yellow"
-          id="generate-test"
-        >
-          ✦ Generar test
-        </button>
-
-      `
-    });
-
-
-    $("#generate-test")
-      ?.addEventListener(
-        "click",
-        generateTest
-      );
-  }
-
-
-  async function generateTest() {
-
-    const topic =
-      String(
-        $("#test-topic")?.value || ""
-      ).trim();
-
-
-    if (!topic) {
-
-      showToast(
-        "Indica el tema del test.",
-        "error"
-      );
-
-      return;
-    }
-
-
-    const button =
-      $("#generate-test");
-
-    if (button) {
-      button.disabled = true;
-      button.textContent =
-        "Generant...";
-    }
-
-
-    try {
-
-      const result =
-        await api(
-          "/api/ai/test",
-          {
-            method: "POST",
-            body: { topic }
-          }
-        );
-
-
-      renderTestQuestions(
-        result
-      );
-
-
-    } catch (error) {
-
-      showError(error);
-
-    } finally {
-
-      if (button) {
-        button.disabled = false;
-        button.textContent =
-          "✦ Generar test";
-      }
-
-    }
-  }
-
-
-  function renderTestQuestions(result) {
-
-    const setup =
-      $("#test-setup");
-
-    const content =
-      $("#test-content");
-
-    if (!content) return;
-
-
-    setup?.classList.add("hidden");
-
-    content.classList.remove("hidden");
-
-
-    const questions =
-      result.questions || [];
-
-
-    content.innerHTML = `
-
-      <div
-        id="test-questions"
-      >
-
-        ${
-          questions.map(
-            (question, index) => {
-
-              const options =
-                question.options ||
-                question.respostes ||
-                [];
-
-              return `
-                <div
-                  class="panel"
-                  style="
-                    margin-bottom:10px;
-                    padding:14px
-                  "
-                >
-
-                  <strong
-                    style="font-size:12px"
-                  >
-                    ${index + 1}.
-                    ${escapeHtml(
-                      question.question ||
-                      question.pregunta ||
-                      ""
-                    )}
-                  </strong>
-
-
-                  <div
-                    style="
-                      display:grid;
-                      gap:6px;
-                      margin-top:10px
-                    "
-                  >
-
-                    ${
-                      options.map(
-                        (option, optionIndex) => {
-
-                          const letter =
-                            ["A","B","C","D"]
-                              [optionIndex] ||
-                            String(
-                              optionIndex + 1
-                            );
-
-
-                          const text =
-                            typeof option === "string"
-                              ? option
-                              : (
-                                  option.text ||
-                                  option.answer ||
-                                  ""
-                                );
-
-
-                          return `
-                            <label
-                              style="
-                                display:flex;
-                                gap:8px;
-                                align-items:center;
-                                padding:8px;
-                                background:rgba(255,255,255,.025);
-                                border:1px solid var(--border);
-                                border-radius:7px;
-                                cursor:pointer
-                              "
-                            >
-
-                              <input
-                                type="radio"
-                                name="question-${index}"
-                                value="${optionIndex}"
-                              >
-
-                              <span
-                                style="
-                                  color:var(--text-muted);
-                                  font-size:10px
-                                "
-                              >
-                                ${letter}
-                              </span>
-
-                              <span
-                                style="font-size:10px"
-                              >
-                                ${escapeHtml(text)}
-                              </span>
-
-                            </label>
-                          `;
-
-                        }
-                      ).join("")
-                    }
-
-                  </div>
-
-                </div>
-              `;
-
-            }
-          ).join("")
-        }
+        </form>
 
       </div>
 
+    </div>
+  `;
 
-      <div
-        id="test-result"
-        class="hidden"
-      ></div>
-
-    `;
-
-
-    const footer =
-      $(".modal-footer");
-
-    if (footer) {
-
-      footer.innerHTML = `
-
-        <button
-          class="btn btn-outline"
-          data-close-modal
-        >
-          Tancar
-        </button>
-
-        <button
-          class="btn btn-yellow"
-          id="grade-test"
-        >
-          Corregir test
-        </button>
-
-      `;
-
-      $("#grade-test")
-        ?.addEventListener(
-          "click",
+  $$("[data-close]", root)
+    .forEach(
+      (button) => {
+        button.onclick =
           () =>
-            gradeTest(
-              result
-            )
-        );
-    }
-  }
-
-
-  async function gradeTest(result) {
-
-    const questions =
-      result.questions || [];
-
-
-    let score = 0;
-
-    const answers = [];
-
-
-    questions.forEach(
-      (question, index) => {
-
-        const selected =
-          document.querySelector(
-            `input[name="question-${index}"]:checked`
-          );
-
-
-        const value =
-          selected
-            ? Number(selected.value)
-            : null;
-
-
-        answers.push(value);
-
-
-        const correct =
-          Number(
-            question.correct_answer ??
-            question.correct ??
-            question.answer ??
-            -1
-          );
-
-
-        if (
-          value !== null &&
-          value === correct
-        ) {
-          score++;
-        }
-
+            root.innerHTML = "";
       }
     );
 
+  $("#test-start").onsubmit =
+    async (event) => {
+      event.preventDefault();
 
-    const topic =
-      result.topic ||
-      "Test";
+      const topic =
+        new FormData(
+          event.target
+        ).get("topic");
 
+      try {
+        const data =
+          await api(
+            "/api/ai/test",
+            {
+              method: "POST",
+              body: JSON.stringify({
+                topic
+              })
+            }
+          );
 
-    try {
-
-      await api(
-        "/api/test-results",
-        {
-          method: "POST",
-          body: {
-            subject: topic,
-            score,
-            total: questions.length || 5
-          }
-        }
-      );
-
-
-      const resultBox =
-        $("#test-result");
-
-      if (resultBox) {
-
-        resultBox.classList.remove(
-          "hidden"
+        renderTestModal(
+          data.test
         );
 
-        resultBox.innerHTML = `
-
-          <div
-            style="
-              padding:18px;
-              text-align:center;
-              background:var(--blue-soft);
-              border:1px solid rgba(18,150,212,.2);
-              border-radius:12px
-            "
-          >
-
-            <div class="eyebrow">
-              RESULTAT
-            </div>
-
-            <strong
-              style="
-                display:block;
-                margin:5px 0;
-                font-size:32px
-              "
-            >
-              ${score}/${questions.length || 5}
-            </strong>
-
-            <p
-              style="
-                margin:0;
-                color:var(--text-muted);
-                font-size:11px
-              "
-            >
-              ${
-                score === questions.length
-                  ? "Perfecte!"
-                  : score >= 3
-                    ? "Bon treball."
-                    : "Continua practicant."
-              }
-            </p>
-
-          </div>
-        `;
-
+      } catch (error) {
+        showToastFromError(
+          error
+        );
       }
+    };
+}
 
+function renderTestModal(
+  test
+) {
+  const root =
+    $("#modal-root");
 
-      const footer =
-        $(".modal-footer");
+  const questions =
+    test.questions || [];
 
-      if (footer) {
+  root.innerHTML = `
+    <div class="modal-backdrop">
 
-        const gradeButton =
-          $("#grade-test");
+      <div class="modal">
 
-        gradeButton?.remove();
+        <div class="modal-head">
 
-      }
-
-
-      await loadTestHistory();
-
-      showToast(
-        "Resultat guardat.",
-        "success"
-      );
-
-
-    } catch (error) {
-
-      showError(error);
-
-    }
-  }
-
-
-  /* =======================================================
-     CERCA
-  ======================================================= */
-
-  function performSearch(query) {
-
-    const value =
-      String(query || "")
-        .trim()
-        .toLowerCase();
-
-
-    if (!value) return;
-
-
-    const task =
-      state.tasks.find(item =>
-        [
-          item.name,
-          item.subject,
-          item.description
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(value)
-      );
-
-
-    if (task) {
-
-      navigate("tasks");
-
-      const search =
-        $("#task-search");
-
-      if (search) {
-        search.value = query;
-
-        state.taskSearch =
-          query;
-
-        renderTasks();
-      }
-
-      return;
-    }
-
-
-    const exam =
-      state.exams.find(item =>
-        [
-          item.subject,
-          item.syllabus
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(value)
-      );
-
-
-    if (exam) {
-
-      navigate("exams");
-
-      return;
-    }
-
-
-    const classroom =
-      state.classes.find(item =>
-        [
-          item.name,
-          item.subject,
-          item.code
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(value)
-      );
-
-
-    if (classroom) {
-
-      navigate("classes");
-
-      openClassDetail(
-        classroom.id
-      );
-
-      return;
-    }
-
-
-    showToast(
-      "No he trobat cap resultat.",
-      "info"
-    );
-  }
-
-
-  /* =======================================================
-     NOTIFICACIONS
-  ======================================================= */
-
-  function renderNotifications() {
-
-    const panel =
-      $("#notification-panel");
-
-    if (!panel) return;
-
-
-    const urgent =
-      state.tasks.filter(task => {
-
-        if (
-          task.status === "completada" ||
-          !task.due_date
-        ) {
-          return false;
-        }
-
-        const days =
-          daysUntil(task.due_date);
-
-        return days !== null &&
-          days <= 2;
-
-      });
-
-
-    const exams =
-      state.exams.filter(exam => {
-
-        const days =
-          daysUntil(exam.exam_date);
-
-        return days !== null &&
-          days >= 0 &&
-          days <= 5;
-
-      });
-
-
-    const items = [];
-
-
-    urgent.forEach(task => {
-
-      items.push(`
-        <div class="floating-panel-item">
-
-          <strong>
-            Tasca propera
-          </strong>
-
-          <small>
-            ${escapeHtml(
-              task.name
+          <h3>
+            Test ·
+            ${esc(
+              test.topic
             )}
-            ·
-            ${escapeHtml(
-              formatDate(
-                task.due_date
-              )
-            )}
-          </small>
-
-        </div>
-      `);
-
-    });
-
-
-    exams.forEach(exam => {
-
-      items.push(`
-        <div class="floating-panel-item">
-
-          <strong>
-            Examen proper
-          </strong>
-
-          <small>
-            ${escapeHtml(
-              exam.subject
-            )}
-            ·
-            ${escapeHtml(
-              formatDate(
-                exam.exam_date
-              )
-            )}
-          </small>
-
-        </div>
-      `);
-
-    });
-
-
-    if (!items.length) {
-
-      panel.innerHTML = `
-        <div class="floating-panel-item">
-
-          <strong>
-            No tens notificacions.
-          </strong>
-
-          <small>
-            Quan hi hagi alguna data important,
-            apareixerà aquí.
-          </small>
-
-        </div>
-      `;
-
-    } else {
-
-      panel.innerHTML =
-        items.slice(0, 8).join("");
-
-    }
-  }
-
-
-  /* =======================================================
-     QUICK ADD
-  ======================================================= */
-
-  function openQuickAdd() {
-
-    const professor =
-      state.user?.role === "professor";
-
-
-    openModal({
-      title: "Afegir",
-
-      body: `
-
-        <div
-          style="
-            display:grid;
-            gap:8px
-          "
-        >
+          </h3>
 
           <button
-            class="tool-card"
-            id="quick-task"
+            class="close"
+            data-close
           >
-
-            <span>✓</span>
-
-            <div>
-              <b>Nova tasca</b>
-              <small>
-                Afegeix feina pendent.
-              </small>
-            </div>
-
-            →
-
+            ×
           </button>
 
+        </div>
 
-          <button
-            class="tool-card"
-            id="quick-exam"
-          >
+        <div id="test-questions">
 
-            <span>▣</span>
-
-            <div>
-              <b>Nou examen</b>
-              <small>
-                Registra una data d'examen.
-              </small>
-            </div>
-
-            →
-
-          </button>
-
-
-          <button
-            class="tool-card"
-            id="quick-session"
-          >
-
-            <span>◫</span>
-
-            <div>
-              <b>Sessió d'estudi</b>
-              <small>
-                Registra temps d'estudi.
-              </small>
-            </div>
-
-            →
-
-          </button>
-
-
-          ${
-            professor
-              ? `
-                <button
-                  class="tool-card"
-                  id="quick-class"
+          ${questions
+            .map(
+              (question, index) => `
+                <div
+                  class="test-question"
+                  data-q="${index}"
                 >
 
-                  <span>⌘</span>
+                  <p>
+                    ${index + 1}.
+                    ${esc(
+                      question.question
+                    )}
+                  </p>
 
-                  <div>
-                    <b>Crear classe</b>
-                    <small>
-                      Crea un espai per als alumnes.
-                    </small>
-                  </div>
+                  ${question.options
+                    .map(
+                      (option, optionIndex) => `
+                        <button
+                          class="test-option"
+                          data-opt="${index}-${optionIndex}"
+                        >
+                          ${
+                            String.fromCharCode(
+                              65 +
+                              optionIndex
+                            )
+                          }
+                          ·
+                          ${esc(option)}
+                        </button>
+                      `
+                    )
+                    .join("")}
 
-                  →
-
-                </button>
+                </div>
               `
-              : ""
-          }
+            )
+            .join("")}
 
         </div>
 
-      `
-    });
+        <div class="modal-actions">
 
+          <button
+            class="btn primary"
+            id="grade-test"
+          >
+            Corregir test
+          </button>
 
-    $("#quick-task")
-      ?.addEventListener(
-        "click",
-        () => {
-          closeModal();
-          openTaskModal();
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+  $$("[data-close]", root)
+    .forEach(
+      (button) => {
+        button.onclick =
+          () =>
+            root.innerHTML = "";
+      }
+    );
+
+  const answers = {};
+
+  $$("[data-opt]", root)
+    .forEach(
+      (button) => {
+        button.onclick =
+          () => {
+
+            const [
+              questionIndex,
+              optionIndex
+            ] =
+              button.dataset.opt
+                .split("-")
+                .map(Number);
+
+            answers[
+              questionIndex
+            ] =
+              optionIndex;
+
+            $$(
+              `[data-q="${questionIndex}"] .test-option`,
+              root
+            ).forEach(
+              (option) =>
+                option.classList.remove(
+                  "selected"
+                )
+            );
+
+            button.classList.add(
+              "selected"
+            );
+          };
+      }
+    );
+
+  $("#grade-test").onclick =
+    async () => {
+
+      let score = 0;
+
+      questions.forEach(
+        (question, index) => {
+          if (
+            answers[index] ===
+            question.answer
+          ) {
+            score++;
+          }
         }
       );
 
+      questions.forEach(
+        (question, index) => {
 
-    $("#quick-exam")
-      ?.addEventListener(
-        "click",
-        () => {
-          closeModal();
-          openExamModal();
+          $$(
+            `[data-q="${index}"] .test-option`,
+            root
+          ).forEach(
+            (button, optionIndex) => {
+
+              if (
+                optionIndex ===
+                question.answer
+              ) {
+                button.classList.add(
+                  "selected"
+                );
+              }
+
+            }
+          );
         }
       );
 
+      $("#grade-test").disabled =
+        true;
 
-    $("#quick-session")
-      ?.addEventListener(
-        "click",
-        () => {
-          closeModal();
-          openStudySessionModal();
+      $("#grade-test").textContent =
+        "Resultat";
+
+      const result =
+        document.createElement(
+          "div"
+        );
+
+      result.className =
+        "test-result";
+
+      result.innerHTML = `
+        <strong>
+          ${score}/${questions.length}
+        </strong>
+
+        <p>
+          Has encertat
+          ${score}
+          de
+          ${questions.length}
+          preguntes.
+        </p>
+
+        <button
+          class="btn primary"
+          id="save-test-result"
+        >
+          Guardar resultat
+        </button>
+      `;
+
+      root
+        .querySelector(
+          ".modal"
+        )
+        .appendChild(result);
+
+      $("#save-test-result").onclick =
+        async () => {
+
+          try {
+            await api(
+              "/api/test-results",
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  topic:
+                    test.topic,
+                  score,
+                  total:
+                    questions.length
+                })
+              }
+            );
+
+            toast(
+              "Resultat guardat al teu progrés."
+            );
+
+            root.innerHTML = "";
+
+          } catch (error) {
+            showToastFromError(
+              error
+            );
+          }
+        };
+    };
+}
+
+
+/* ============================================================
+   RECOMANACIONS
+============================================================ */
+
+function openReco() {
+  navigate(
+    "dashboard"
+  );
+
+  renderRecommendations(
+    true
+  );
+}
+
+
+/* ============================================================
+   AUTENTICACIÓ
+============================================================ */
+
+function bindAuth() {
+
+  $$(".auth-tab")
+    .forEach(
+      (button) => {
+
+        button.onclick =
+          () => {
+
+            $$(".auth-tab")
+              .forEach(
+                (tab) =>
+                  tab.classList.remove(
+                    "active"
+                  )
+              );
+
+            button.classList.add(
+              "active"
+            );
+
+            const register =
+              button.dataset.auth ===
+              "register";
+
+            $("#login-form")
+              ?.classList.toggle(
+                "hidden",
+                register
+              );
+
+            $("#register-form")
+              ?.classList.toggle(
+                "hidden",
+                !register
+              );
+
+            if ($("#auth-message")) {
+              $("#auth-message").textContent =
+                "";
+            }
+          };
+      }
+    );
+
+  $("#login-form").onsubmit =
+    async (event) => {
+
+      event.preventDefault();
+
+      if ($("#auth-message")) {
+        $("#auth-message").textContent =
+          "";
+      }
+
+      try {
+        const data =
+          await api(
+            "/api/login",
+            {
+              method: "POST",
+              body: JSON.stringify(
+                Object.fromEntries(
+                  new FormData(
+                    event.target
+                  ).entries()
+                )
+              )
+            }
+          );
+
+        setUser(
+          data.user
+        );
+
+        $("#auth-view")
+          ?.classList.add(
+            "hidden"
+          );
+
+        $("#app-view")
+          ?.classList.remove(
+            "hidden"
+          );
+
+        await loadDashboard();
+
+        toast(
+          "Benvingut/da a MiniClassroom."
+        );
+
+      } catch (error) {
+
+        if ($("#auth-message")) {
+          $("#auth-message").textContent =
+            error.message;
         }
-      );
+      }
+    };
 
+  $("#register-form").onsubmit =
+    async (event) => {
 
-    $("#quick-class")
-      ?.addEventListener(
-        "click",
-        () => {
-          closeModal();
-          openClassCreateModal();
+      event.preventDefault();
+
+      try {
+
+        await api(
+          "/api/register",
+          {
+            method: "POST",
+            body: JSON.stringify(
+              Object.fromEntries(
+                new FormData(
+                  event.target
+                ).entries()
+              )
+            )
+          }
+        );
+
+        const data =
+          await api(
+            "/api/me"
+          );
+
+        setUser(
+          data.user
+        );
+
+        $("#auth-view")
+          ?.classList.add(
+            "hidden"
+          );
+
+        $("#app-view")
+          ?.classList.remove(
+            "hidden"
+          );
+
+        await loadDashboard();
+
+        toast(
+          "Compte creat correctament."
+        );
+
+      } catch (error) {
+
+        if ($("#auth-message")) {
+          $("#auth-message").textContent =
+            error.message;
         }
-      );
+      }
+    };
+}
+
+
+/* ============================================================
+   INTERFÍCIE
+============================================================ */
+
+function bindUI() {
+
+  bindNav();
+
+  bindAuth();
+
+  if ($("#logout-btn")) {
+    $("#logout-btn").onclick =
+      async () => {
+
+        try {
+          await api(
+            "/api/logout",
+            {
+              method: "POST"
+            }
+          );
+        } finally {
+          location.reload();
+        }
+      };
   }
 
+  if ($("#new-task")) {
+    $("#new-task").onclick =
+      () =>
+        openTaskModal();
+  }
 
-  /* =======================================================
-     EVENTS
-  ======================================================= */
+  if ($("#new-exam")) {
+    $("#new-exam").onclick =
+      () =>
+        openExamModal();
+  }
 
-  function bindApplicationEvents() {
+  if ($("#quick-add")) {
+    $("#quick-add").onclick =
+      () =>
+        openTaskModal();
+  }
 
-    /* Navegació */
+  if ($("#quick-ai")) {
+    $("#quick-ai").onclick =
+      () =>
+        navigate("ai");
+  }
 
-    $$(".nav-item")
-      .forEach(button => {
-
-        button.addEventListener(
-          "click",
-          () =>
-            navigate(
-              button.dataset.section
-            )
+  if ($("#recalc-ai")) {
+    $("#recalc-ai").onclick =
+      () =>
+        renderRecommendations(
+          true
         );
+  }
 
-      });
+  if ($("#open-reco")) {
+    $("#open-reco").onclick =
+      openReco;
+  }
 
+  if ($("#open-test")) {
+    $("#open-test").onclick =
+      openTest;
+  }
 
-    $$("[data-section]")
-      .forEach(button => {
+  if ($("#generate-plan")) {
+    $("#generate-plan").onclick =
+      generatePlan;
+  }
 
-        if (
-          button.classList.contains(
-            "nav-item"
-          )
-        ) {
-          return;
-        }
+  if ($("#prev-week")) {
+    $("#prev-week").onclick =
+      () => {
+        state.weekOffset--;
+        renderPlanner();
+      };
+  }
 
-        button.addEventListener(
-          "click",
-          () =>
-            navigate(
-              button.dataset.section
-            )
+  if ($("#next-week")) {
+    $("#next-week").onclick =
+      () => {
+        state.weekOffset++;
+        renderPlanner();
+      };
+  }
+
+  if ($("#add-session")) {
+    $("#add-session").onclick =
+      () =>
+        toast(
+          "Les sessions es creen a partir del teu pla."
         );
+  }
 
-      });
+  if ($("#task-search")) {
+    $("#task-search").oninput =
+      (event) => {
+        state.taskSearch =
+          event.target.value;
 
+        renderTasks();
+      };
+  }
 
-    /* Auth */
+  $$("[data-filter]")
+    .forEach(
+      (button) => {
 
-    $$(".auth-tab")
-      .forEach(button => {
-
-        button.addEventListener(
-          "click",
-          () =>
-            setAuthTab(
-              button.dataset.auth
-            )
-        );
-
-      });
-
-
-    $("#login-form")
-      ?.addEventListener(
-        "submit",
-        login
-      );
-
-
-    $("#register-form")
-      ?.addEventListener(
-        "submit",
-        register
-      );
-
-
-    $("#logout-btn")
-      ?.addEventListener(
-        "click",
-        logout
-      );
-
-
-    /* Accions */
-
-    $("#new-task")
-      ?.addEventListener(
-        "click",
-        () =>
-          openTaskModal()
-      );
-
-
-    $("#new-exam")
-      ?.addEventListener(
-        "click",
-        () =>
-          openExamModal()
-      );
-
-
-    $("#quick-add")
-      ?.addEventListener(
-        "click",
-        openQuickAdd
-      );
-
-
-    $("#quick-ai")
-      ?.addEventListener(
-        "click",
-        () => navigate("ai")
-      );
-
-
-    /* Tasques */
-
-    $$("#task-filter button")
-      .forEach(button => {
-
-        button.addEventListener(
-          "click",
+        button.onclick =
           () => {
+
+            $$("[data-filter]")
+              .forEach(
+                (item) =>
+                  item.classList.remove(
+                    "active"
+                  )
+              );
+
+            button.classList.add(
+              "active"
+            );
 
             state.taskFilter =
               button.dataset.filter;
 
-            $$("#task-filter button")
-              .forEach(item =>
-                item.classList.toggle(
-                  "active",
-                  item === button
-                )
-              );
-
             renderTasks();
-
-          }
-        );
-
-      });
-
-
-    $("#task-search")
-      ?.addEventListener(
-        "input",
-        event => {
-
-          state.taskSearch =
-            event.target.value;
-
-          renderTasks();
-
-        }
-      );
-
-
-    $("#tasks-list")
-      ?.addEventListener(
-        "click",
-        event => {
-
-          const button =
-            event.target.closest(
-              "[data-action]"
-            );
-
-          if (!button) return;
-
-          const id =
-            Number(button.dataset.id);
-
-          const task =
-            state.tasks.find(
-              item => item.id === id
-            );
-
-          if (!task) return;
-
-
-          if (
-            button.dataset.action ===
-            "complete-task"
-          ) {
-
-            toggleTask(task);
-
-          }
-
-
-          if (
-            button.dataset.action ===
-            "edit-task"
-          ) {
-
-            openTaskModal(task);
-
-          }
-
-        }
-      );
-
-
-    /* Exàmens */
-
-    $("#exams-list")
-      ?.addEventListener(
-        "click",
-        event => {
-
-          const button =
-            event.target.closest(
-              "[data-action]"
-            );
-
-          if (!button) return;
-
-          const id =
-            Number(button.dataset.id);
-
-          const exam =
-            state.exams.find(
-              item => item.id === id
-            );
-
-          if (!exam) return;
-
-
-          if (
-            button.dataset.action ===
-            "edit-exam"
-          ) {
-
-            openExamModal(exam);
-
-          }
-
-
-          if (
-            button.dataset.action ===
-            "delete-exam"
-          ) {
-
-            deleteExam(exam);
-
-          }
-
-        }
-      );
-
-
-    /* Classes */
-
-    $("#classes-list")
-      ?.addEventListener(
-        "click",
-        event => {
-
-          const button =
-            event.target.closest(
-              "[data-action='open-class']"
-            );
-
-          if (!button) return;
-
-          openClassDetail(
-            Number(button.dataset.id)
-          );
-
-        }
-      );
-
-
-    /* IA */
-
-    $$("#ai-modes button")
-      .forEach(button => {
-
-        button.addEventListener(
-          "click",
-          () =>
-            setAIMode(
-              button.dataset.mode
-            )
-        );
-
-      });
-
-
-    $("#ai-form")
-      ?.addEventListener(
-        "submit",
-        sendAIMessage
-      );
-
-
-    $("#open-test")
-      ?.addEventListener(
-        "click",
-        openTestModal
-      );
-
-
-    $("#open-reco")
-      ?.addEventListener(
-        "click",
-        loadRecommendations
-      );
-
-
-    /* Eines de dashboard */
-
-    $$("[data-mode]")
-      .forEach(button => {
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            setAIMode(
-              button.dataset.mode
-            );
-
-            navigate("ai");
-
-          }
-        );
-
-      });
-
-
-    /* Recomanacions */
-
-    $("#recalc-ai")
-      ?.addEventListener(
-        "click",
-        loadRecommendations
-      );
-
-
-    /* Calendari */
-
-    $("#cal-prev")
-      ?.addEventListener(
-        "click",
-        () => {
-
-          state.calendarOffset--;
-
-          renderCalendar();
-
-        }
-      );
-
-
-    $("#cal-next")
-      ?.addEventListener(
-        "click",
-        () => {
-
-          state.calendarOffset++;
-
-          renderCalendar();
-
-        }
-      );
-
-
-    $("#calendar-today")
-      ?.addEventListener(
-        "click",
-        () => {
-
-          state.calendarOffset = 0;
-
-          renderCalendar();
-
-        }
-      );
-
-
-    /* Planner */
-
-    $("#prev-week")
-      ?.addEventListener(
-        "click",
-        () => {
-
-          state.plannerOffset--;
-
-          renderPlanner();
-
-        }
-      );
-
-
-    $("#next-week")
-      ?.addEventListener(
-        "click",
-        () => {
-
-          state.plannerOffset++;
-
-          renderPlanner();
-
-        }
-      );
-
-
-    $("#generate-plan")
-      ?.addEventListener(
-        "click",
-        generatePlan
-      );
-
-
-    $("#add-session")
-      ?.addEventListener(
-        "click",
-        openStudySessionModal
-      );
-
-
-    /* Notificacions */
-
-    $("#notifications")
-      ?.addEventListener(
-        "click",
-        () => {
-
-          const panel =
-            $("#notification-panel");
-
-          if (!panel) return;
-
-          panel.classList.toggle(
-            "hidden"
-          );
-
-          if (
-            !panel.classList.contains(
-              "hidden"
-            )
-          ) {
-            renderNotifications();
-          }
-
-        }
-      );
-
-
-    /* Cerca */
-
-    $("#global-search")
-      ?.addEventListener(
-        "keydown",
-        event => {
-
-          if (
-            event.key === "Enter"
-          ) {
-
-            performSearch(
-              event.target.value
-            );
-
-          }
-
-        }
-      );
-
-
-    /* Cmd/Ctrl + K */
-
-    document.addEventListener(
-      "keydown",
-      event => {
-
-        if (
-          (event.metaKey ||
-           event.ctrlKey) &&
-          event.key.toLowerCase() === "k"
-        ) {
-
-          event.preventDefault();
-
-          $("#global-search")
-            ?.focus();
-
-        }
-
-        if (
-          event.key === "Escape"
-        ) {
-          closeModal();
-
-          $("#notification-panel")
-            ?.classList.add(
-              "hidden"
-            );
-        }
-
+          };
       }
     );
 
+  $$("[data-mode]")
+    .forEach(
+      (button) => {
 
-    /* Mobile */
+        button.onclick =
+          () => {
 
-    $("#mobile-menu")
-      ?.addEventListener(
-        "click",
-        () => {
+            $$("[data-mode]")
+              .forEach(
+                (item) =>
+                  item.classList.remove(
+                    "active"
+                  )
+              );
 
-          $(".sidebar")
-            ?.classList.toggle(
-              "open"
+            button.classList.add(
+              "active"
             );
 
-        }
-      );
+            state.aiMode =
+              button.dataset.mode;
 
+            if ($("#ai-input")) {
+              $("#ai-input").placeholder =
+                state.aiMode ===
+                "RESUMIR"
+                  ? "Enganxa el text que vols resumir..."
+                  : "Escriu una pregunta...";
+            }
+          };
+      }
+    );
 
-    /* Perfil */
-
-    $$(".profile-chip")
-      .forEach(button => {
-
-        button.addEventListener(
-          "click",
-          () => navigate("profile")
-        );
-
-      });
+  if ($("#ai-form")) {
+    $("#ai-form").onsubmit =
+      (event) => {
+        event.preventDefault();
+        sendAI();
+      };
   }
 
+  if ($("#ai-input")) {
+    $("#ai-input").addEventListener(
+      "keydown",
+      (event) => {
 
-  /* =======================================================
-     ELIMINAR EXAMEN
-  ======================================================= */
-
-  async function deleteExam(exam) {
-
-    if (
-      !confirm(
-        `Vols eliminar l'examen de ${exam.subject}?`
-      )
-    ) {
-      return;
-    }
-
-
-    try {
-
-      await api(
-        `/api/exams/${exam.id}`,
-        {
-          method: "DELETE"
+        if (
+          event.key ===
+            "Enter" &&
+          !event.shiftKey
+        ) {
+          event.preventDefault();
+          sendAI();
         }
-      );
-
-      await loadExams();
-      await loadDashboard();
-
-      showToast(
-        "Examen eliminat.",
-        "success"
-      );
-
-    } catch (error) {
-
-      showError(error);
-
-    }
+      }
+    );
   }
+}
 
 
-  /* =======================================================
-     INICIAR
-  ======================================================= */
+/* ============================================================
+   ARRANCADA
+============================================================ */
 
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-      bindApplicationEvents();
-
-      boot();
-
-    }
-  );
-
-})();
+window.addEventListener(
+  "DOMContentLoaded",
+  () => {
+    bindUI();
+    boot();
+  }
+);
