@@ -16,12 +16,14 @@ except ImportError:
 
 
 app = Flask(__name__)
+
 app.secret_key = os.getenv(
     "SECRET_KEY",
     "miniclassroom-development-secret-change-me"
 )
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+
 app.config["JSON_SORT_KEYS"] = False
 
 
@@ -39,8 +41,7 @@ def get_db():
     url = DATABASE_URL
 
     if "sslmode=" not in url:
-        separator = "&" if "?" in url else "?"
-        url += separator + "sslmode=require"
+        url += ("&" if "?" in url else "?") + "sslmode=require"
 
     return psycopg2.connect(
         url,
@@ -54,39 +55,36 @@ def db_query(sql, params=None, fetch=False, one=False):
     try:
         conn = get_db()
 
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(sql, params or ())
+        with conn.cursor(
+            cursor_factory=RealDictCursor
+        ) as cur:
+
+            cur.execute(
+                sql,
+                params or ()
+            )
 
             result = None
 
             if fetch:
-                result = cur.fetchone() if one else cur.fetchall()
+                if one:
+                    result = cur.fetchone()
+                else:
+                    result = cur.fetchall()
 
             conn.commit()
+
             return result
 
     except Exception:
         if conn:
             conn.rollback()
+
         raise
 
     finally:
         if conn:
             conn.close()
-
-
-def init_db():
-    db_query("SELECT 1")
-
-
-def ensure_db():
-    if not DATABASE_URL:
-        return
-
-    try:
-        init_db()
-    except Exception as exc:
-        print("DATABASE INIT ERROR:", repr(exc))
 
 
 # ============================================================
@@ -98,6 +96,7 @@ def today():
 
 
 def parse_date(value):
+
     if not value:
         return None
 
@@ -111,12 +110,14 @@ def parse_date(value):
 
 
 def serialize(row):
+
     if row is None:
         return None
 
     result = dict(row)
 
     for key, value in list(result.items()):
+
         if isinstance(value, (date, datetime)):
             result[key] = value.isoformat()
 
@@ -124,27 +125,29 @@ def serialize(row):
 
 
 def serialize_many(rows):
-    return [serialize(row) for row in rows]
+    return [
+        serialize(row)
+        for row in rows
+    ]
 
 
 def current_user():
+
     user_id = session.get("user_id")
 
     if not user_id:
         return None
 
     try:
+
         return db_query(
             """
             SELECT
                 id,
+                name,
                 name AS username,
                 email,
-                CASE
-                    WHEN LOWER(role) IN ('teacher', 'professor')
-                    THEN 'professor'
-                    ELSE 'alumne'
-                END AS role,
+                role,
                 created_at
             FROM users
             WHERE id = %s
@@ -153,14 +156,18 @@ def current_user():
             fetch=True,
             one=True
         )
+
     except Exception:
         return None
 
 
 def login_required(fn):
+
     @wraps(fn)
     def wrapper(*args, **kwargs):
+
         if not session.get("user_id"):
+
             return jsonify({
                 "ok": False,
                 "error": "Has d'iniciar sessió."
@@ -172,17 +179,21 @@ def login_required(fn):
 
 
 def teacher_required(fn):
+
     @wraps(fn)
     def wrapper(*args, **kwargs):
+
         user = current_user()
 
         if not user:
+
             return jsonify({
                 "ok": False,
                 "error": "Has d'iniciar sessió."
             }), 401
 
         if user["role"] != "professor":
+
             return jsonify({
                 "ok": False,
                 "error": "Aquesta acció és només per a professors."
@@ -194,20 +205,18 @@ def teacher_required(fn):
 
 
 def log_activity(event_type, details=""):
+
     user_id = session.get("user_id")
 
     if not user_id:
         return
 
     try:
+
         db_query(
             """
             INSERT INTO activity_log
-            (
-                user_id,
-                event_type,
-                details
-            )
+            (user_id, event_type, details)
             VALUES (%s, %s, %s)
             """,
             (
@@ -216,35 +225,24 @@ def log_activity(event_type, details=""):
                 details
             )
         )
+
     except Exception as exc:
-        print("ACTIVITY LOG ERROR:", repr(exc))
 
-
-def normalize_difficulty(value):
-    if value is None:
-        return "mitjana"
-
-    value = str(value).strip().lower()
-
-    mapping = {
-        "1": "baixa",
-        "2": "mitjana",
-        "3": "alta",
-        "baixa": "baixa",
-        "mitjana": "mitjana",
-        "alta": "alta",
-        "low": "baixa",
-        "medium": "mitjana",
-        "high": "alta"
-    }
-
-    return mapping.get(value, "mitjana")
+        print(
+            "ACTIVITY LOG ERROR:",
+            repr(exc)
+        )
 
 
 def generate_class_code():
-    alphabet = string.ascii_uppercase + string.digits
 
-    for _ in range(100):
+    alphabet = (
+        string.ascii_uppercase +
+        string.digits
+    )
+
+    for _ in range(30):
+
         code = "".join(
             secrets.choice(alphabet)
             for _ in range(6)
@@ -265,15 +263,8 @@ def generate_class_code():
             return code
 
     raise RuntimeError(
-        "No s'ha pogut generar un codi de classe únic."
+        "No s'ha pogut generar un codi de classe."
     )
-
-
-def json_error(message, status=400):
-    return jsonify({
-        "ok": False,
-        "error": message
-    }), status
 
 
 # ============================================================
@@ -282,12 +273,21 @@ def json_error(message, status=400):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
 
+    return render_template(
+        "index.html"
+    )
+
+
+# ============================================================
+# HEALTH
+# ============================================================
 
 @app.get("/api/health")
 def health():
+
     try:
+
         db_query("SELECT 1")
 
         return jsonify({
@@ -296,10 +296,15 @@ def health():
         })
 
     except Exception as exc:
+
+        print(
+            "HEALTH ERROR:",
+            repr(exc)
+        )
+
         return jsonify({
             "ok": False,
-            "database": False,
-            "error": str(exc)
+            "database": False
         }), 500
 
 
@@ -309,192 +314,238 @@ def health():
 
 @app.post("/api/register")
 def register():
-    data = request.get_json(silent=True) or {}
 
-    name = (
-        data.get("name")
-        or data.get("username")
-        or ""
+    data = request.get_json(
+        silent=True
+    ) or {}
+
+    name = str(
+        data.get(
+            "username",
+            data.get("name", "")
+        )
     ).strip()
 
-    email = (
-        data.get("email")
-        or ""
+    email = str(
+        data.get("email", "")
     ).strip().lower()
 
-    password = data.get("password") or ""
+    password = str(
+        data.get("password", "")
+    )
 
-    role = (
-        data.get("role")
-        or "alumne"
+    role = str(
+        data.get(
+            "role",
+            "alumne"
+        )
     ).strip().lower()
 
-    if not name:
-        return json_error(
-            "Has d'introduir el teu nom."
-        )
+    if not name or not email or not password:
 
-    if not email:
-        return json_error(
-            "Has d'introduir el teu correu."
-        )
+        return jsonify({
+            "ok": False,
+            "error": "Completa tots els camps."
+        }), 400
 
     if len(password) < 6:
-        return json_error(
-            "La contrasenya ha de tenir almenys 6 caràcters."
-        )
 
-    if role not in ("alumne", "professor"):
+        return jsonify({
+            "ok": False,
+            "error": (
+                "La contrasenya ha de tenir "
+                "almenys 6 caràcters."
+            )
+        }), 400
+
+    if role not in (
+        "alumne",
+        "professor"
+    ):
         role = "alumne"
 
-    existing = db_query(
-        """
-        SELECT id
-        FROM users
-        WHERE LOWER(email) = LOWER(%s)
-        """,
-        (email,),
-        fetch=True,
-        one=True
-    )
+    try:
 
-    if existing:
-        return json_error(
-            "Aquest correu ja està registrat.",
-            409
+        existing = db_query(
+            """
+            SELECT id
+            FROM users
+            WHERE LOWER(email) = LOWER(%s)
+            """,
+            (email,),
+            fetch=True,
+            one=True
         )
 
-    password_hash = generate_password_hash(password)
+        if existing:
 
-    row = db_query(
-        """
-        INSERT INTO users
-        (
-            name,
-            email,
-            password_hash,
-            role
-        )
-        VALUES (%s, %s, %s, %s)
-        RETURNING
-            id,
-            name,
-            email,
-            role,
-            created_at
-        """,
-        (
-            name,
-            email,
-            password_hash,
-            role
-        ),
-        fetch=True,
-        one=True
-    )
+            return jsonify({
+                "ok": False,
+                "error": "Aquest correu ja està registrat."
+            }), 409
 
-    user = serialize(row)
-
-    session["user_id"] = user["id"]
-
-    log_activity(
-        "register",
-        "Nou compte creat"
-    )
-
-    return jsonify({
-        "ok": True,
-        "user": {
-            "id": user["id"],
-            "username": user["name"],
-            "name": user["name"],
-            "email": user["email"],
-            "role": (
-                "professor"
-                if str(user["role"]).lower()
-                in ("professor", "teacher")
-                else "alumne"
+        user = db_query(
+            """
+            INSERT INTO users
+            (
+                name,
+                email,
+                password_hash,
+                role
             )
-        }
-    })
+            VALUES (%s,%s,%s,%s)
+            RETURNING
+                id,
+                name,
+                name AS username,
+                email,
+                role,
+                created_at
+            """,
+            (
+                name,
+                email,
+                generate_password_hash(password),
+                role
+            ),
+            fetch=True,
+            one=True
+        )
+
+        session.clear()
+
+        session["user_id"] = user["id"]
+
+        log_activity(
+            "register",
+            "Compte creat"
+        )
+
+        return jsonify({
+            "ok": True,
+            "user": serialize(user)
+        })
+
+    except Exception as exc:
+
+        print(
+            "REGISTER ERROR:",
+            repr(exc)
+        )
+
+        return jsonify({
+            "ok": False,
+            "error": "No s'ha pogut crear el compte."
+        }), 500
 
 
 @app.post("/api/login")
 def login():
-    data = request.get_json(silent=True) or {}
 
-    email = (
-        data.get("email")
-        or ""
+    data = request.get_json(
+        silent=True
+    ) or {}
+
+    email = str(
+        data.get("email", "")
     ).strip().lower()
 
-    password = data.get("password") or ""
+    password = str(
+        data.get("password", "")
+    )
 
     if not email or not password:
-        return json_error(
-            "Introdueix el correu i la contrasenya."
+
+        return jsonify({
+            "ok": False,
+            "error": (
+                "Escriu el correu "
+                "i la contrasenya."
+            )
+        }), 400
+
+    try:
+
+        user = db_query(
+            """
+            SELECT
+                id,
+                name,
+                name AS username,
+                email,
+                password_hash,
+                role,
+                created_at
+            FROM users
+            WHERE LOWER(email) = LOWER(%s)
+            """,
+            (email,),
+            fetch=True,
+            one=True
         )
 
-    row = db_query(
-        """
-        SELECT
-            id,
-            name,
-            email,
-            password_hash,
-            role,
-            created_at
-        FROM users
-        WHERE LOWER(email) = LOWER(%s)
-        """,
-        (email,),
-        fetch=True,
-        one=True
-    )
+        if not user:
 
-    if not row:
-        return json_error(
-            "El correu o la contrasenya no són correctes.",
-            401
+            return jsonify({
+                "ok": False,
+                "error": (
+                    "El correu o la contrasenya "
+                    "no són correctes."
+                )
+            }), 401
+
+        if not check_password_hash(
+            user["password_hash"],
+            password
+        ):
+
+            return jsonify({
+                "ok": False,
+                "error": (
+                    "El correu o la contrasenya "
+                    "no són correctes."
+                )
+            }), 401
+
+        session.clear()
+
+        session["user_id"] = user["id"]
+
+        log_activity(
+            "login",
+            "Inici de sessió"
         )
 
-    if not check_password_hash(
-        row["password_hash"],
-        password
-    ):
-        return json_error(
-            "El correu o la contrasenya no són correctes.",
-            401
+        return jsonify({
+            "ok": True,
+            "user": {
+                "id": user["id"],
+                "name": user["name"],
+                "username": user["name"],
+                "email": user["email"],
+                "role": user["role"]
+            }
+        })
+
+    except Exception as exc:
+
+        print(
+            "LOGIN DATABASE ERROR:",
+            repr(exc)
         )
 
-    session["user_id"] = row["id"]
-
-    role = (
-        "professor"
-        if str(row["role"]).lower()
-        in ("professor", "teacher")
-        else "alumne"
-    )
-
-    log_activity(
-        "login",
-        "Inici de sessió"
-    )
-
-    return jsonify({
-        "ok": True,
-        "user": {
-            "id": row["id"],
-            "username": row["name"],
-            "name": row["name"],
-            "email": row["email"],
-            "role": role
-        }
-    })
+        return jsonify({
+            "ok": False,
+            "error": (
+                "No s'ha pogut completar "
+                "l'operació amb la base de dades."
+            )
+        }), 500
 
 
 @app.post("/api/logout")
 def logout():
+
     session.clear()
 
     return jsonify({
@@ -503,29 +554,23 @@ def logout():
 
 
 @app.get("/api/me")
+@login_required
 def me():
+
     user = current_user()
 
     if not user:
-        return jsonify({
-            "ok": True,
-            "authenticated": False,
-            "user": None
-        })
 
-    user = serialize(user)
+        session.clear()
+
+        return jsonify({
+            "ok": False,
+            "error": "Sessió no vàlida."
+        }), 401
 
     return jsonify({
         "ok": True,
-        "authenticated": True,
-        "user": {
-            "id": user["id"],
-            "username": user["username"],
-            "name": user["username"],
-            "email": user["email"],
-            "role": user["role"],
-            "created_at": user.get("created_at")
-        }
+        "user": serialize(user)
     })
 
 
@@ -536,119 +581,157 @@ def me():
 @app.get("/api/dashboard")
 @login_required
 def dashboard():
+
     user_id = session["user_id"]
 
-    pending = db_query(
-        """
-        SELECT COUNT(*) AS count
-        FROM tasks
-        WHERE user_id = %s
-          AND LOWER(COALESCE(status, 'pendent'))
-          != 'completada'
-        """,
-        (user_id,),
-        fetch=True,
-        one=True
-    )["count"]
+    try:
 
-    urgent = db_query(
-        """
-        SELECT COUNT(*) AS count
-        FROM tasks
-        WHERE user_id = %s
-          AND LOWER(COALESCE(status, 'pendent'))
-          != 'completada'
-          AND due_date IS NOT NULL
-          AND due_date <= CURRENT_DATE + INTERVAL '3 days'
-        """,
-        (user_id,),
-        fetch=True,
-        one=True
-    )["count"]
+        tasks = db_query(
+            """
+            SELECT *
+            FROM tasks
+            WHERE user_id = %s
+            ORDER BY
+                due_date NULLS LAST,
+                created_at DESC,
+                id DESC
+            """,
+            (user_id,),
+            fetch=True
+        )
 
-    total = db_query(
-        """
-        SELECT COUNT(*) AS count
-        FROM tasks
-        WHERE user_id = %s
-        """,
-        (user_id,),
-        fetch=True,
-        one=True
-    )["count"]
+        exams = db_query(
+            """
+            SELECT *
+            FROM exams
+            WHERE user_id = %s
+            ORDER BY
+                exam_date ASC,
+                id ASC
+            """,
+            (user_id,),
+            fetch=True
+        )
 
-    completed = db_query(
-        """
-        SELECT COUNT(*) AS count
-        FROM tasks
-        WHERE user_id = %s
-          AND LOWER(COALESCE(status, '')) = 'completada'
-        """,
-        (user_id,),
-        fetch=True,
-        one=True
-    )["count"]
+        pending = [
+            t for t in tasks
+            if t.get("status") != "completada"
+        ]
 
-    progress = (
-        round((completed / total) * 100)
-        if total
-        else 0
-    )
+        completed = [
+            t for t in tasks
+            if t.get("status") == "completada"
+        ]
 
-    exams = db_query(
-        """
-        SELECT COUNT(*) AS count
-        FROM exams
-        WHERE user_id = %s
-          AND exam_date >= CURRENT_DATE
-        """,
-        (user_id,),
-        fetch=True,
-        one=True
-    )["count"]
+        urgent_limit = (
+            today() +
+            timedelta(days=2)
+        )
 
-    upcoming_tasks = db_query(
-        """
-        SELECT *
-        FROM tasks
-        WHERE user_id = %s
-          AND LOWER(COALESCE(status, 'pendent'))
-          != 'completada'
-        ORDER BY due_date NULLS LAST, id DESC
-        LIMIT 6
-        """,
-        (user_id,),
-        fetch=True
-    )
+        urgent = [
+            t for t in pending
+            if t.get("due_date")
+            and t["due_date"] <= urgent_limit
+        ]
 
-    upcoming_exams = db_query(
-        """
-        SELECT *
-        FROM exams
-        WHERE user_id = %s
-          AND exam_date >= CURRENT_DATE
-        ORDER BY exam_date ASC
-        LIMIT 5
-        """,
-        (user_id,),
-        fetch=True
-    )
+        progress_value = (
+            round(
+                len(completed) /
+                len(tasks) *
+                100
+            )
+            if tasks
+            else 0
+        )
 
-    return jsonify({
-        "ok": True,
-        "stats": {
-            "pending": pending,
-            "urgent": urgent,
-            "exams": exams,
-            "progress": progress
-        },
-        "pending_count": pending,
-        "urgent_count": urgent,
-        "exam_count": exams,
-        "progress": progress,
-        "tasks": serialize_many(upcoming_tasks),
-        "exams": serialize_many(upcoming_exams)
-    })
+        study = db_query(
+            """
+            SELECT
+                COALESCE(
+                    SUM(completed_minutes),
+                    0
+                ) AS completed_minutes,
+
+                COALESCE(
+                    SUM(planned_minutes),
+                    0
+                ) AS planned_minutes
+
+            FROM study_sessions
+
+            WHERE student_id = %s
+            """,
+            (user_id,),
+            fetch=True,
+            one=True
+        )
+
+        return jsonify({
+
+            "ok": True,
+
+            "tasks":
+                serialize_many(tasks),
+
+            "exams":
+                serialize_many(exams),
+
+            "pending_count":
+                len(pending),
+
+            "urgent_count":
+                len(urgent),
+
+            "progress":
+                progress_value,
+
+            "stats": {
+
+                "pending":
+                    len(pending),
+
+                "completed":
+                    len(completed),
+
+                "exams":
+                    len(exams),
+
+                "urgent":
+                    len(urgent),
+
+                "progress":
+                    progress_value,
+
+                "study_minutes":
+                    int(
+                        study[
+                            "completed_minutes"
+                        ] or 0
+                    ),
+
+                "planned_minutes":
+                    int(
+                        study[
+                            "planned_minutes"
+                        ] or 0
+                    )
+            }
+        })
+
+    except Exception as exc:
+
+        print(
+            "DASHBOARD ERROR:",
+            repr(exc)
+        )
+
+        return jsonify({
+            "ok": False,
+            "error": (
+                "No s'ha pogut carregar "
+                "el tauler."
+            )
+        }), 500
 
 
 # ============================================================
@@ -658,96 +741,105 @@ def dashboard():
 @app.get("/api/tasks")
 @login_required
 def get_tasks():
-    user_id = session["user_id"]
 
-    rows = db_query(
-        """
-        SELECT *
-        FROM tasks
-        WHERE user_id = %s
-        ORDER BY due_date NULLS LAST, id DESC
-        """,
-        (user_id,),
-        fetch=True
-    )
+    try:
 
-    return jsonify({
-        "ok": True,
-        "tasks": serialize_many(rows)
-    })
+        rows = db_query(
+            """
+            SELECT *
+            FROM tasks
+            WHERE user_id = %s
+            ORDER BY
+                due_date NULLS LAST,
+                created_at DESC,
+                id DESC
+            """,
+            (session["user_id"],),
+            fetch=True
+        )
+
+        return jsonify({
+            "ok": True,
+            "tasks":
+                serialize_many(rows)
+        })
+
+    except Exception as exc:
+
+        print(
+            "GET TASKS ERROR:",
+            repr(exc)
+        )
+
+        return jsonify({
+            "ok": False,
+            "error": (
+                "No s'han pogut "
+                "carregar les tasques."
+            )
+        }), 500
 
 
 @app.post("/api/tasks")
 @login_required
 def create_task():
-    data = request.get_json(silent=True) or {}
 
-    user_id = session["user_id"]
+    data = request.get_json(
+        silent=True
+    ) or {}
 
-    name = (
-        data.get("name")
-        or data.get("title")
-        or ""
+    name = str(
+        data.get("name", "")
     ).strip()
 
-    subject = (
-        data.get("subject")
-        or data.get("assignatura")
-        or ""
-    ).strip()
+    if not name:
 
-    description = (
-        data.get("description")
-        or ""
-    ).strip()
-
-    due_date = (
-        data.get("due_date")
-        or data.get("date")
-        or None
-    )
-
-    estimated = data.get(
-        "estimated_minutes",
-        data.get("estimated_time", 30)
-    )
+        return jsonify({
+            "ok": False,
+            "error": (
+                "El nom de la tasca "
+                "és obligatori."
+            )
+        }), 400
 
     try:
-        estimated = int(estimated or 30)
-    except (TypeError, ValueError):
+
+        estimated = max(
+            1,
+            int(
+                data.get(
+                    "estimated_minutes",
+                    data.get(
+                        "estimated_time",
+                        30
+                    )
+                )
+            )
+        )
+
+    except Exception:
+
         estimated = 30
 
-    difficulty = normalize_difficulty(
-        data.get("difficulty")
-    )
-
-    status = (
-        data.get("status")
-        or "pendent"
-    ).strip().lower()
+    status = str(
+        data.get(
+            "status",
+            "pendent"
+        )
+    ).strip()
 
     if status not in (
         "pendent",
         "en procés",
-        "en proces",
         "completada"
     ):
         status = "pendent"
-
-    if status == "en proces":
-        status = "en procés"
-
-    if not name:
-        return json_error(
-            "Has d'introduir el nom de la tasca."
-        )
 
     row = db_query(
         """
         INSERT INTO tasks
         (
             user_id,
-            class_id,
             name,
             subject,
             description,
@@ -756,18 +848,42 @@ def create_task():
             difficulty,
             status
         )
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        VALUES
+        (%s,%s,%s,%s,%s,%s,%s,%s)
         RETURNING *
         """,
         (
-            user_id,
-            data.get("class_id"),
+            session["user_id"],
+
             name,
-            subject,
-            description,
-            due_date,
+
+            str(
+                data.get(
+                    "subject",
+                    ""
+                )
+            ).strip(),
+
+            str(
+                data.get(
+                    "description",
+                    ""
+                )
+            ).strip(),
+
+            parse_date(
+                data.get("due_date")
+            ),
+
             estimated,
-            difficulty,
+
+            str(
+                data.get(
+                    "difficulty",
+                    "mitjana"
+                )
+            ).strip(),
+
             status
         ),
         fetch=True,
@@ -785,76 +901,73 @@ def create_task():
     }), 201
 
 
-@app.route(
-    "/api/tasks/<int:task_id>",
-    methods=["PUT", "PATCH"]
-)
-@login_required
-def update_task(task_id):
-    user_id = session["user_id"]
+def update_task_impl(task_id):
+
+    data = request.get_json(
+        silent=True
+    ) or {}
 
     existing = db_query(
         """
         SELECT *
         FROM tasks
         WHERE id = %s
-          AND user_id = %s
+        AND user_id = %s
         """,
         (
             task_id,
-            user_id
+            session["user_id"]
         ),
         fetch=True,
         one=True
     )
 
     if not existing:
-        return json_error(
-            "No s'ha trobat la tasca.",
-            404
+
+        return jsonify({
+            "ok": False,
+            "error": "Tasca no trobada."
+        }), 404
+
+    try:
+
+        estimated = int(
+            data.get(
+                "estimated_minutes",
+                existing.get(
+                    "estimated_minutes"
+                ) or 30
+            )
         )
 
-    data = request.get_json(silent=True) or {}
+    except Exception:
 
-    name = data.get(
-        "name",
-        existing["name"]
-    )
+        estimated = (
+            existing.get(
+                "estimated_minutes"
+            ) or 30
+        )
 
-    subject = data.get(
-        "subject",
-        existing["subject"]
-    )
-
-    description = data.get(
-        "description",
-        existing["description"]
-    )
-
-    due_date = data.get(
-        "due_date",
-        existing["due_date"]
-    )
-
-    estimated = data.get(
-        "estimated_minutes",
-        existing["estimated_minutes"]
-    )
-
-    difficulty = normalize_difficulty(
+    status = str(
         data.get(
-            "difficulty",
-            existing["difficulty"]
+            "status",
+            existing.get(
+                "status"
+            ) or "pendent"
         )
     )
 
-    status = data.get(
-        "status",
-        existing["status"]
-    )
+    if status not in (
+        "pendent",
+        "en procés",
+        "completada"
+    ):
 
-    if status == "en proces":
-        status = "en procés"
+        status = (
+            existing.get(
+                "status"
+            ) or "pendent"
+        )
 
     row = db_query(
         """
@@ -867,29 +980,73 @@ def update_task(task_id):
             estimated_minutes = %s,
             difficulty = %s,
             status = %s
+
         WHERE id = %s
-          AND user_id = %s
+        AND user_id = %s
+
         RETURNING *
         """,
         (
-            name,
-            subject,
-            description,
-            due_date,
+            str(
+                data.get(
+                    "name",
+                    existing["name"]
+                )
+            ).strip(),
+
+            str(
+                data.get(
+                    "subject",
+                    existing.get(
+                        "subject"
+                    ) or ""
+                )
+            ).strip(),
+
+            str(
+                data.get(
+                    "description",
+                    existing.get(
+                        "description"
+                    ) or ""
+                )
+            ).strip(),
+
+            (
+                parse_date(
+                    data["due_date"]
+                )
+                if "due_date" in data
+                else existing.get(
+                    "due_date"
+                )
+            ),
+
             estimated,
-            difficulty,
+
+            data.get(
+                "difficulty",
+                existing.get(
+                    "difficulty"
+                ) or "mitjana"
+            ),
+
             status,
+
             task_id,
-            user_id
+
+            session["user_id"]
         ),
         fetch=True,
         one=True
     )
 
-    log_activity(
-        "task_updated",
-        str(task_id)
-    )
+    if status == "completada":
+
+        log_activity(
+            "task_completed",
+            str(existing["name"])
+        )
 
     return jsonify({
         "ok": True,
@@ -897,31 +1054,49 @@ def update_task(task_id):
     })
 
 
+@app.put("/api/tasks/<int:task_id>")
+@login_required
+def update_task(task_id):
+
+    return update_task_impl(
+        task_id
+    )
+
+
+@app.patch("/api/tasks/<int:task_id>")
+@login_required
+def patch_task(task_id):
+
+    return update_task_impl(
+        task_id
+    )
+
+
 @app.delete("/api/tasks/<int:task_id>")
 @login_required
 def delete_task(task_id):
-    user_id = session["user_id"]
 
     row = db_query(
         """
         DELETE FROM tasks
         WHERE id = %s
-          AND user_id = %s
+        AND user_id = %s
         RETURNING id
         """,
         (
             task_id,
-            user_id
+            session["user_id"]
         ),
         fetch=True,
         one=True
     )
 
     if not row:
-        return json_error(
-            "No s'ha trobat la tasca.",
-            404
-        )
+
+        return jsonify({
+            "ok": False,
+            "error": "Tasca no trobada."
+        }), 404
 
     log_activity(
         "task_deleted",
@@ -940,68 +1115,94 @@ def delete_task(task_id):
 @app.get("/api/exams")
 @login_required
 def get_exams():
-    rows = db_query(
-        """
-        SELECT *
-        FROM exams
-        WHERE user_id = %s
-        ORDER BY exam_date ASC, id DESC
-        """,
-        (session["user_id"],),
-        fetch=True
-    )
 
-    return jsonify({
-        "ok": True,
-        "exams": serialize_many(rows)
-    })
+    try:
+
+        rows = db_query(
+            """
+            SELECT *
+            FROM exams
+            WHERE user_id = %s
+            ORDER BY
+                exam_date ASC,
+                id ASC
+            """,
+            (session["user_id"],),
+            fetch=True
+        )
+
+        return jsonify({
+            "ok": True,
+            "exams":
+                serialize_many(rows)
+        })
+
+    except Exception as exc:
+
+        print(
+            "GET EXAMS ERROR:",
+            repr(exc)
+        )
+
+        return jsonify({
+            "ok": False,
+            "error": (
+                "No s'han pogut "
+                "carregar els exàmens."
+            )
+        }), 500
 
 
 @app.post("/api/exams")
 @login_required
 def create_exam():
-    data = request.get_json(silent=True) or {}
 
-    subject = (
-        data.get("subject")
-        or ""
+    data = request.get_json(
+        silent=True
+    ) or {}
+
+    subject = str(
+        data.get(
+            "subject",
+            ""
+        )
     ).strip()
 
-    exam_date = (
-        data.get("exam_date")
-        or data.get("date")
-        or None
+    exam_date = parse_date(
+        data.get(
+            "exam_date",
+            data.get("date")
+        )
     )
 
-    syllabus = (
-        data.get("syllabus")
-        or data.get("temari")
-        or ""
-    ).strip()
+    if not subject or not exam_date:
 
-    difficulty = normalize_difficulty(
-        data.get("difficulty")
-    )
-
-    study_minutes = data.get(
-        "study_minutes",
-        data.get("available_minutes", 0)
-    )
+        return jsonify({
+            "ok": False,
+            "error": (
+                "Indica l'assignatura "
+                "i la data."
+            )
+        }), 400
 
     try:
-        study_minutes = int(study_minutes or 0)
-    except (TypeError, ValueError):
-        study_minutes = 0
 
-    if not subject:
-        return json_error(
-            "Has d'introduir l'assignatura."
+        study_minutes = max(
+            0,
+            int(
+                data.get(
+                    "study_minutes",
+                    data.get(
+                        "study_time",
+                        120
+                    )
+                )
+            )
         )
 
-    if not exam_date:
-        return json_error(
-            "Has d'introduir la data de l'examen."
-        )
+    except Exception:
+
+        study_minutes = 120
 
     row = db_query(
         """
@@ -1014,15 +1215,29 @@ def create_exam():
             difficulty,
             study_minutes
         )
-        VALUES (%s,%s,%s,%s,%s,%s)
+        VALUES
+        (%s,%s,%s,%s,%s,%s)
         RETURNING *
         """,
         (
             session["user_id"],
             subject,
             exam_date,
-            syllabus,
-            difficulty,
+
+            str(
+                data.get(
+                    "syllabus",
+                    ""
+                )
+            ).strip(),
+
+            str(
+                data.get(
+                    "difficulty",
+                    "mitjana"
+                )
+            ).strip(),
+
             study_minutes
         ),
         fetch=True,
@@ -1043,12 +1258,17 @@ def create_exam():
 @app.put("/api/exams/<int:exam_id>")
 @login_required
 def update_exam(exam_id):
+
+    data = request.get_json(
+        silent=True
+    ) or {}
+
     existing = db_query(
         """
         SELECT *
         FROM exams
         WHERE id = %s
-          AND user_id = %s
+        AND user_id = %s
         """,
         (
             exam_id,
@@ -1059,39 +1279,11 @@ def update_exam(exam_id):
     )
 
     if not existing:
-        return json_error(
-            "No s'ha trobat l'examen.",
-            404
-        )
 
-    data = request.get_json(silent=True) or {}
-
-    subject = data.get(
-        "subject",
-        existing["subject"]
-    )
-
-    exam_date = data.get(
-        "exam_date",
-        existing["exam_date"]
-    )
-
-    syllabus = data.get(
-        "syllabus",
-        existing["syllabus"]
-    )
-
-    difficulty = normalize_difficulty(
-        data.get(
-            "difficulty",
-            existing["difficulty"]
-        )
-    )
-
-    study_minutes = data.get(
-        "study_minutes",
-        existing["study_minutes"]
-    )
+        return jsonify({
+            "ok": False,
+            "error": "Examen no trobat."
+        }), 404
 
     row = db_query(
         """
@@ -1102,17 +1294,53 @@ def update_exam(exam_id):
             syllabus = %s,
             difficulty = %s,
             study_minutes = %s
+
         WHERE id = %s
-          AND user_id = %s
+        AND user_id = %s
+
         RETURNING *
         """,
         (
-            subject,
-            exam_date,
-            syllabus,
-            difficulty,
-            study_minutes,
+            str(
+                data.get(
+                    "subject",
+                    existing["subject"]
+                )
+            ).strip(),
+
+            (
+                parse_date(
+                    data["exam_date"]
+                )
+                if "exam_date" in data
+                else existing["exam_date"]
+            ),
+
+            data.get(
+                "syllabus",
+                existing.get(
+                    "syllabus"
+                )
+            ),
+
+            data.get(
+                "difficulty",
+                existing.get(
+                    "difficulty",
+                    "mitjana"
+                )
+            ),
+
+            data.get(
+                "study_minutes",
+                existing.get(
+                    "study_minutes",
+                    120
+                )
+            ),
+
             exam_id,
+
             session["user_id"]
         ),
         fetch=True,
@@ -1128,11 +1356,12 @@ def update_exam(exam_id):
 @app.delete("/api/exams/<int:exam_id>")
 @login_required
 def delete_exam(exam_id):
+
     row = db_query(
         """
         DELETE FROM exams
         WHERE id = %s
-          AND user_id = %s
+        AND user_id = %s
         RETURNING id
         """,
         (
@@ -1144,15 +1373,11 @@ def delete_exam(exam_id):
     )
 
     if not row:
-        return json_error(
-            "No s'ha trobat l'examen.",
-            404
-        )
 
-    log_activity(
-        "exam_deleted",
-        str(exam_id)
-    )
+        return jsonify({
+            "ok": False,
+            "error": "Examen no trobat."
+        }), 404
 
     return jsonify({
         "ok": True
@@ -1166,82 +1391,141 @@ def delete_exam(exam_id):
 @app.get("/api/classes")
 @login_required
 def get_classes():
+
     user = current_user()
 
-    if not user:
-        return json_error(
-            "Has d'iniciar sessió.",
-            401
+    try:
+
+        if user["role"] == "professor":
+
+            rows = db_query(
+                """
+                SELECT
+                    c.id,
+                    c.name,
+                    c.code,
+                    c.teacher_id,
+                    c.created_at,
+
+                    u.name AS teacher_name,
+
+                    COUNT(
+                        cs.student_id
+                    )::int AS student_count
+
+                FROM classes c
+
+                LEFT JOIN users u
+                    ON u.id = c.teacher_id
+
+                LEFT JOIN class_students cs
+                    ON cs.class_id = c.id
+
+                WHERE c.teacher_id = %s
+
+                GROUP BY
+                    c.id,
+                    u.name
+
+                ORDER BY
+                    c.created_at DESC
+                """,
+                (
+                    user["id"],
+                ),
+                fetch=True
+            )
+
+        else:
+
+            rows = db_query(
+                """
+                SELECT
+                    c.id,
+                    c.name,
+                    c.code,
+                    c.teacher_id,
+                    c.created_at,
+
+                    u.name AS teacher_name,
+
+                    COUNT(
+                        all_cs.student_id
+                    )::int AS student_count,
+
+                    'alumne' AS membership
+
+                FROM classes c
+
+                JOIN class_students my_cs
+                    ON my_cs.class_id = c.id
+                    AND my_cs.student_id = %s
+
+                LEFT JOIN class_students all_cs
+                    ON all_cs.class_id = c.id
+
+                LEFT JOIN users u
+                    ON u.id = c.teacher_id
+
+                GROUP BY
+                    c.id,
+                    u.name
+
+                ORDER BY
+                    c.created_at DESC
+                """,
+                (
+                    user["id"],
+                ),
+                fetch=True
+            )
+
+        return jsonify({
+            "ok": True,
+            "classes":
+                serialize_many(rows)
+        })
+
+    except Exception as exc:
+
+        print(
+            "GET CLASSES ERROR:",
+            repr(exc)
         )
 
-    if user["role"] == "professor":
-        rows = db_query(
-            """
-            SELECT
-                c.*,
-                u.name AS teacher_name,
-                COUNT(cs.student_id) AS student_count
-            FROM classes c
-            JOIN users u
-                ON u.id = c.teacher_id
-            LEFT JOIN class_students cs
-                ON cs.class_id = c.id
-            WHERE c.teacher_id = %s
-            GROUP BY c.id, u.name
-            ORDER BY c.created_at DESC
-            """,
-            (user["id"],),
-            fetch=True
-        )
-    else:
-        rows = db_query(
-            """
-            SELECT
-                c.*,
-                u.name AS teacher_name,
-                COUNT(cs2.student_id) AS student_count
-            FROM classes c
-            JOIN users u
-                ON u.id = c.teacher_id
-            JOIN class_students cs
-                ON cs.class_id = c.id
-               AND cs.student_id = %s
-            LEFT JOIN class_students cs2
-                ON cs2.class_id = c.id
-            GROUP BY c.id, u.name
-            ORDER BY c.created_at DESC
-            """,
-            (user["id"],),
-            fetch=True
-        )
-
-    classes = serialize_many(rows)
-
-    for item in classes:
-        item["teacher"] = item.get("teacher_name")
-        item["membership"] = True
-
-    return jsonify({
-        "ok": True,
-        "classes": classes
-    })
+        return jsonify({
+            "ok": False,
+            "error": (
+                "No s'han pogut "
+                "carregar les classes."
+            )
+        }), 500
 
 
 @app.post("/api/classes")
 @teacher_required
 def create_class():
-    data = request.get_json(silent=True) or {}
 
-    name = (
-        data.get("name")
-        or data.get("title")
-        or ""
+    data = request.get_json(
+        silent=True
+    ) or {}
+
+    name = str(
+        data.get(
+            "name",
+            ""
+        )
     ).strip()
 
     if not name:
-        return json_error(
-            "Has d'introduir el nom de la classe."
-        )
+
+        return jsonify({
+            "ok": False,
+            "error": (
+                "El nom de la classe "
+                "és obligatori."
+            )
+        }), 400
 
     code = generate_class_code()
 
@@ -1253,7 +1537,8 @@ def create_class():
             code,
             teacher_id
         )
-        VALUES (%s,%s,%s)
+        VALUES
+        (%s,%s,%s)
         RETURNING *
         """,
         (
@@ -1279,63 +1564,85 @@ def create_class():
 @app.post("/api/classes/join")
 @login_required
 def join_class():
+
     user = current_user()
 
     if user["role"] != "alumne":
-        return json_error(
-            "Només els alumnes poden unir-se a una classe.",
-            403
+
+        return jsonify({
+            "ok": False,
+            "error": (
+                "Només els alumnes poden "
+                "unir-se a una classe."
+            )
+        }), 403
+
+    data = request.get_json(
+        silent=True
+    ) or {}
+
+    code = str(
+        data.get(
+            "code",
+            ""
         )
-
-    data = request.get_json(silent=True) or {}
-
-    code = (
-        data.get("code")
-        or ""
     ).strip().upper()
 
-    if not code:
-        return json_error(
-            "Introdueix el codi de la classe."
-        )
+    if len(code) != 6:
 
-    class_row = db_query(
+        return jsonify({
+            "ok": False,
+            "error": (
+                "El codi ha de tenir "
+                "6 caràcters."
+            )
+        }), 400
+
+    classroom = db_query(
         """
         SELECT *
         FROM classes
-        WHERE UPPER(code) = %s
+        WHERE code = %s
         """,
         (code,),
         fetch=True,
         one=True
     )
 
-    if not class_row:
-        return json_error(
-            "No existeix cap classe amb aquest codi.",
-            404
-        )
+    if not classroom:
 
-    existing = db_query(
+        return jsonify({
+            "ok": False,
+            "error": (
+                "No existeix cap classe "
+                "amb aquest codi."
+            )
+        }), 404
+
+    already = db_query(
         """
-        SELECT id
+        SELECT 1
         FROM class_students
         WHERE class_id = %s
-          AND student_id = %s
+        AND student_id = %s
         """,
         (
-            class_row["id"],
+            classroom["id"],
             user["id"]
         ),
         fetch=True,
         one=True
     )
 
-    if existing:
-        return json_error(
-            "Ja formes part d'aquesta classe.",
-            409
-        )
+    if already:
+
+        return jsonify({
+            "ok": False,
+            "error": (
+                "Ja formes part "
+                "d'aquesta classe."
+            )
+        }), 409
 
     db_query(
         """
@@ -1344,65 +1651,89 @@ def join_class():
             class_id,
             student_id
         )
-        VALUES (%s,%s)
+        VALUES
+        (%s,%s)
         """,
         (
-            class_row["id"],
+            classroom["id"],
             user["id"]
         )
     )
 
     log_activity(
         "class_joined",
-        str(class_row["id"])
+        classroom["name"]
     )
 
     return jsonify({
         "ok": True,
-        "class": serialize(class_row)
+        "class":
+            serialize(classroom)
     })
 
 
 @app.get("/api/classes/<int:class_id>")
 @login_required
 def class_detail(class_id):
+
     user = current_user()
 
-    class_row = db_query(
+    classroom = db_query(
         """
         SELECT
-            c.*,
-            u.name AS teacher_name
+            c.id,
+            c.name,
+            c.code,
+            c.teacher_id,
+            c.created_at,
+
+            u.name AS teacher_name,
+
+            COUNT(
+                cs.student_id
+            )::int AS student_count
+
         FROM classes c
-        JOIN users u
+
+        LEFT JOIN users u
             ON u.id = c.teacher_id
+
+        LEFT JOIN class_students cs
+            ON cs.class_id = c.id
+
         WHERE c.id = %s
+
+        GROUP BY
+            c.id,
+            u.name
         """,
-        (class_id,),
+        (
+            class_id,
+        ),
         fetch=True,
         one=True
     )
 
-    if not class_row:
-        return json_error(
-            "No s'ha trobat la classe.",
-            404
-        )
+    if not classroom:
 
-    allowed = False
+        return jsonify({
+            "ok": False,
+            "error": "Classe no trobada."
+        }), 404
 
-    if user["role"] == "professor":
-        allowed = (
-            class_row["teacher_id"]
-            == user["id"]
-        )
-    else:
-        membership = db_query(
+    allowed = (
+        classroom["teacher_id"] ==
+        user["id"]
+    )
+
+    if not allowed:
+
+        member = db_query(
             """
-            SELECT id
+            SELECT 1
             FROM class_students
             WHERE class_id = %s
-              AND student_id = %s
+            AND student_id = %s
             """,
             (
                 class_id,
@@ -1412,63 +1743,100 @@ def class_detail(class_id):
             one=True
         )
 
-        allowed = bool(membership)
+        allowed = bool(member)
 
     if not allowed:
-        return json_error(
-            "No tens accés a aquesta classe.",
-            403
-        )
+
+        return jsonify({
+            "ok": False,
+            "error": (
+                "No tens accés "
+                "a aquesta classe."
+            )
+        }), 403
+
+    content = db_query(
+        """
+        SELECT
+            cc.id,
+            cc.class_id,
+            cc.teacher_id,
+            cc.kind,
+            cc.title,
+            cc.body,
+            cc.event_date,
+            cc.created_at,
+
+            u.name AS author_name
+
+        FROM class_content cc
+
+        LEFT JOIN users u
+            ON u.id = cc.teacher_id
+
+        WHERE cc.class_id = %s
+
+        ORDER BY
+            cc.created_at DESC
+        """,
+        (
+            class_id,
+        ),
+        fetch=True
+    )
 
     students = db_query(
         """
         SELECT
             u.id,
             u.name,
-            u.email
+            u.name AS username,
+            u.email,
+            cs.joined_at
+
         FROM class_students cs
+
         JOIN users u
             ON u.id = cs.student_id
+
         WHERE cs.class_id = %s
-        ORDER BY u.name
-        """,
-        (class_id,),
-        fetch=True
-    )
 
-    content = db_query(
-        """
-        SELECT *
-        FROM class_content
-        WHERE class_id = %s
         ORDER BY
-            COALESCE(due_date, created_at) DESC,
-            id DESC
+            u.name
         """,
-        (class_id,),
+        (
+            class_id,
+        ),
         fetch=True
     )
-
-    result = serialize(class_row)
-    result["teacher"] = result.get("teacher_name")
-    result["students"] = serialize_many(students)
-    result["content"] = serialize_many(content)
 
     return jsonify({
+
         "ok": True,
-        "class": result
+
+        "class":
+            serialize(classroom),
+
+        "content":
+            serialize_many(content),
+
+        "students":
+            serialize_many(students)
     })
 
 
-@app.post("/api/classes/<int:class_id>/content")
+@app.post(
+    "/api/classes/<int:class_id>/content"
+)
 @teacher_required
 def create_class_content(class_id):
-    class_row = db_query(
+
+    classroom = db_query(
         """
         SELECT *
         FROM classes
         WHERE id = %s
-          AND teacher_id = %s
+        AND teacher_id = %s
         """,
         (
             class_id,
@@ -1478,74 +1846,99 @@ def create_class_content(class_id):
         one=True
     )
 
-    if not class_row:
-        return json_error(
-            "No tens accés a aquesta classe.",
-            403
+    if not classroom:
+
+        return jsonify({
+            "ok": False,
+            "error": (
+                "Classe no trobada "
+                "o sense permisos."
+            )
+        }), 404
+
+    data = request.get_json(
+        silent=True
+    ) or {}
+
+    title = str(
+        data.get(
+            "title",
+            ""
         )
-
-    data = request.get_json(silent=True) or {}
-
-    content_type = (
-        data.get("type")
-        or data.get("content_type")
-        or "anunci"
-    ).strip().lower()
-
-    title = (
-        data.get("title")
-        or data.get("name")
-        or ""
     ).strip()
-
-    description = (
-        data.get("description")
-        or ""
-    ).strip()
-
-    due_date = (
-        data.get("due_date")
-        or data.get("event_date")
-        or None
-    )
 
     if not title:
-        return json_error(
-            "Has d'introduir un títol."
+
+        return jsonify({
+            "ok": False,
+            "error": (
+                "El títol és obligatori."
+            )
+        }), 400
+
+    kind = str(
+        data.get(
+            "kind",
+            data.get(
+                "content_type",
+                data.get(
+                    "type",
+                    "avis"
+                )
+            )
         )
+    ).strip()
+
+    body = str(
+        data.get(
+            "body",
+            data.get(
+                "description",
+                ""
+            )
+        )
+    ).strip()
+
+    event_date = parse_date(
+        data.get(
+            "event_date",
+            data.get(
+                "due_date"
+            )
+        )
+    )
 
     row = db_query(
         """
         INSERT INTO class_content
         (
             class_id,
-            type,
+            teacher_id,
+            kind,
             title,
-            description,
-            due_date
+            body,
+            event_date
         )
-        VALUES (%s,%s,%s,%s,%s)
+        VALUES
+        (%s,%s,%s,%s,%s,%s)
         RETURNING *
         """,
         (
             class_id,
-            content_type,
+            session["user_id"],
+            kind,
             title,
-            description,
-            due_date
+            body,
+            event_date
         ),
         fetch=True,
         one=True
     )
 
-    log_activity(
-        "class_content_created",
-        title
-    )
-
     return jsonify({
         "ok": True,
-        "content": serialize(row)
+        "content":
+            serialize(row)
     }), 201
 
 
@@ -1556,85 +1949,134 @@ def create_class_content(class_id):
 @app.get("/api/study-sessions")
 @login_required
 def get_study_sessions():
+
     rows = db_query(
         """
-        SELECT *
+        SELECT
+            id,
+            student_id,
+            task_id,
+            subject,
+            session_date,
+            planned_minutes,
+            completed_minutes,
+            completed_minutes AS minutes,
+            created_at
+
         FROM study_sessions
-        WHERE user_id = %s
-        ORDER BY session_date ASC, id ASC
+
+        WHERE student_id = %s
+
+        ORDER BY
+            session_date DESC,
+            id DESC
+
+        LIMIT 100
         """,
-        (session["user_id"],),
+        (
+            session["user_id"],
+        ),
         fetch=True
     )
 
     return jsonify({
         "ok": True,
-        "sessions": serialize_many(rows)
+        "sessions":
+            serialize_many(rows)
     })
 
 
 @app.post("/api/study-sessions")
 @login_required
 def create_study_session():
-    data = request.get_json(silent=True) or {}
+
+    data = request.get_json(
+        silent=True
+    ) or {}
 
     session_date = (
-        data.get("session_date")
-        or data.get("date")
-        or None
-    )
-
-    minutes = data.get(
-        "minutes",
-        data.get("duration_minutes", 0)
+        parse_date(
+            data.get(
+                "session_date"
+            )
+        )
+        or today()
     )
 
     try:
-        minutes = int(minutes or 0)
-    except (TypeError, ValueError):
-        minutes = 0
 
-    title = (
-        data.get("title")
-        or data.get("name")
-        or "Sessió d'estudi"
-    ).strip()
-
-    if not session_date:
-        return json_error(
-            "Has d'indicar una data."
+        planned = max(
+            0,
+            int(
+                data.get(
+                    "planned_minutes",
+                    data.get(
+                        "minutes",
+                        0
+                    )
+                )
+            )
         )
+
+    except Exception:
+
+        planned = 0
+
+    try:
+
+        completed = max(
+            0,
+            int(
+                data.get(
+                    "completed_minutes",
+                    data.get(
+                        "completed",
+                        0
+                    )
+                )
+            )
+        )
+
+    except Exception:
+
+        completed = 0
 
     row = db_query(
         """
         INSERT INTO study_sessions
         (
-            user_id,
+            student_id,
+            task_id,
+            subject,
             session_date,
-            minutes,
-            title
+            planned_minutes,
+            completed_minutes
         )
-        VALUES (%s,%s,%s,%s)
+        VALUES
+        (%s,%s,%s,%s,%s,%s)
         RETURNING *
         """,
         (
             session["user_id"],
+            data.get("task_id"),
+            data.get("subject", ""),
             session_date,
-            minutes,
-            title
+            planned,
+            completed
         ),
         fetch=True,
         one=True
     )
 
     log_activity(
-        "study_session_created",
-        title
+        "study_session",
+        f"{completed}/{planned} minuts"
     )
 
     return jsonify({
         "ok": True,
-        "session": serialize(row)
+        "session":
+            serialize(row)
     }), 201
 
 
@@ -1645,64 +2087,50 @@ def create_study_session():
 @app.get("/api/progress")
 @login_required
 def progress():
+
     user_id = session["user_id"]
 
-    total_tasks = db_query(
+    tasks = db_query(
         """
-        SELECT COUNT(*) AS count
+        SELECT
+            COUNT(*)::int AS total,
+
+            COUNT(*) FILTER (
+                WHERE status = 'completada'
+            )::int AS completed
+
         FROM tasks
+
         WHERE user_id = %s
         """,
-        (user_id,),
+        (
+            user_id,
+        ),
         fetch=True,
         one=True
-    )["count"]
-
-    completed_tasks = db_query(
-        """
-        SELECT COUNT(*) AS count
-        FROM tasks
-        WHERE user_id = %s
-          AND LOWER(COALESCE(status, '')) = 'completada'
-        """,
-        (user_id,),
-        fetch=True,
-        one=True
-    )["count"]
-
-    pending_tasks = total_tasks - completed_tasks
-
-    task_progress = (
-        round(
-            completed_tasks
-            / total_tasks
-            * 100
-        )
-        if total_tasks
-        else 0
     )
 
     study = db_query(
         """
         SELECT
-            COALESCE(SUM(minutes), 0) AS minutes
-        FROM study_sessions
-        WHERE user_id = %s
-        """,
-        (user_id,),
-        fetch=True,
-        one=True
-    )["minutes"]
 
-    tests = db_query(
-        """
-        SELECT
-            COUNT(*) AS count,
-            COALESCE(AVG(score), 0) AS average
-        FROM test_results
-        WHERE user_id = %s
+            COALESCE(
+                SUM(planned_minutes),
+                0
+            )::int AS planned_minutes,
+
+            COALESCE(
+                SUM(completed_minutes),
+                0
+            )::int AS completed_minutes
+
+        FROM study_sessions
+
+        WHERE student_id = %s
         """,
-        (user_id,),
+        (
+            user_id,
+        ),
         fetch=True,
         one=True
     )
@@ -1710,52 +2138,148 @@ def progress():
     weekly = db_query(
         """
         SELECT
-            COALESCE(SUM(minutes), 0) AS minutes
+            session_date,
+
+            COALESCE(
+                SUM(planned_minutes),
+                0
+            )::int AS planned_minutes,
+
+            COALESCE(
+                SUM(completed_minutes),
+                0
+            )::int AS completed_minutes
+
         FROM study_sessions
-        WHERE user_id = %s
-          AND session_date >= CURRENT_DATE - INTERVAL '6 days'
+
+        WHERE student_id = %s
+
+        AND session_date >=
+            CURRENT_DATE - INTERVAL '6 days'
+
+        GROUP BY
+            session_date
+
+        ORDER BY
+            session_date
         """,
-        (user_id,),
+        (
+            user_id,
+        ),
+        fetch=True
+    )
+
+    tests = db_query(
+        """
+        SELECT
+
+            COUNT(*)::int AS total,
+
+            COALESCE(
+                AVG(
+                    CASE
+                        WHEN total > 0
+                        THEN score::numeric /
+                             total * 100
+                    END
+                ),
+                0
+            )::numeric AS average
+
+        FROM test_results
+
+        WHERE user_id = %s
+        """,
+        (
+            user_id,
+        ),
         fetch=True,
         one=True
-    )["minutes"]
+    )
+
+    total = int(
+        tasks["total"] or 0
+    )
+
+    completed = int(
+        tasks["completed"] or 0
+    )
+
+    percentage = (
+        round(
+            completed /
+            total *
+            100
+        )
+        if total
+        else 0
+    )
+
+    planned = int(
+        study["planned_minutes"] or 0
+    )
+
+    completed_minutes = int(
+        study["completed_minutes"] or 0
+    )
+
+    weekly_data = serialize_many(
+        weekly
+    )
 
     return jsonify({
+
         "ok": True,
-        "progress": task_progress,
-        "total_tasks": total_tasks,
-        "completed_tasks": completed_tasks,
-        "pending_tasks": pending_tasks,
-        "study_minutes": study,
-        "weekly_study_minutes": weekly,
-        "test_count": tests["count"],
-        "test_average": float(tests["average"] or 0),
+
+        "progress":
+            percentage,
+
+        "total_tasks":
+            total,
+
+        "completed_tasks":
+            completed,
+
+        "study_minutes":
+            completed_minutes,
+
+        "planned_minutes":
+            planned,
+
         "tasks": {
-            "total": total_tasks,
-            "completed": completed_tasks,
-            "pending": pending_tasks,
-            "percentage": task_progress
+            "total":
+                total,
+            "completed":
+                completed,
+            "pending":
+                total - completed,
+            "percentage":
+                percentage
         },
+
         "study": {
-            "minutes": study,
-            "hours": round(
-                float(study or 0) / 60,
-                1
-            )
+            "planned_minutes":
+                planned,
+            "completed_minutes":
+                completed_minutes
         },
+
         "tests": {
-            "count": tests["count"],
-            "average": float(
-                tests["average"] or 0
-            )
+            "total":
+                int(
+                    tests["total"] or 0
+                ),
+            "average":
+                float(
+                    tests["average"] or 0
+                )
         },
-        "week": {
-            "minutes": weekly,
-            "hours": round(
-                float(weekly or 0) / 60,
-                1
-            )
-        }
+
+        "weekly":
+            weekly_data,
+
+        "week":
+            weekly_data
     })
 
 
@@ -1763,47 +2287,42 @@ def progress():
 # TESTS
 # ============================================================
 
-@app.route(
-    "/api/tests/result",
-    methods=["POST"]
-)
-@app.route(
-    "/api/test-results",
-    methods=["POST"]
-)
+@app.post("/api/tests/result")
+@app.post("/api/test-results")
 @login_required
 def save_test_result():
-    data = request.get_json(silent=True) or {}
 
-    subject = (
-        data.get("subject")
-        or ""
-    ).strip()
-
-    score = data.get(
-        "score",
-        data.get("correct", 0)
-    )
-
-    total = data.get(
-        "total",
-        5
-    )
+    data = request.get_json(
+        silent=True
+    ) or {}
 
     try:
-        score = float(score or 0)
-    except (TypeError, ValueError):
+
+        score = int(
+            data.get(
+                "score",
+                0
+            )
+        )
+
+        total = int(
+            data.get(
+                "total",
+                5
+            )
+        )
+
+    except Exception:
+
         score = 0
-
-    try:
-        total = int(total or 5)
-    except (TypeError, ValueError):
         total = 5
 
-    answers = data.get(
-        "answers",
-        data.get("details", "")
-    )
+    subject = str(
+        data.get(
+            "subject",
+            ""
+        )
+    ).strip()
 
     row = db_query(
         """
@@ -1812,18 +2331,17 @@ def save_test_result():
             user_id,
             subject,
             score,
-            total,
-            details
+            total
         )
-        VALUES (%s,%s,%s,%s,%s)
+        VALUES
+        (%s,%s,%s,%s)
         RETURNING *
         """,
         (
             session["user_id"],
             subject,
             score,
-            total,
-            str(answers)
+            total
         ),
         fetch=True,
         one=True
@@ -1831,33 +2349,42 @@ def save_test_result():
 
     log_activity(
         "test_completed",
-        f"{subject}: {score}/{total}"
+        f"{score}/{total}"
     )
 
     return jsonify({
         "ok": True,
-        "result": serialize(row)
+        "result":
+            serialize(row)
     }), 201
 
 
 @app.get("/api/tests/history")
 @login_required
 def test_history():
+
     rows = db_query(
         """
         SELECT *
         FROM test_results
+
         WHERE user_id = %s
-        ORDER BY created_at DESC, id DESC
-        LIMIT 20
+
+        ORDER BY
+            created_at DESC
+
+        LIMIT 30
         """,
-        (session["user_id"],),
+        (
+            session["user_id"],
+        ),
         fetch=True
     )
 
     return jsonify({
         "ok": True,
-        "results": serialize_many(rows)
+        "results":
+            serialize_many(rows)
     })
 
 
@@ -1868,23 +2395,37 @@ def test_history():
 @app.post("/api/ai")
 @login_required
 def ai():
-    data = request.get_json(silent=True) or {}
 
-    message = (
-        data.get("message")
-        or data.get("prompt")
-        or ""
+    data = request.get_json(
+        silent=True
+    ) or {}
+
+    mode = str(
+        data.get(
+            "mode",
+            "DUBTE"
+        )
+    ).upper()
+
+    message = str(
+        data.get(
+            "message",
+            data.get(
+                "prompt",
+                ""
+            )
+        )
     ).strip()
 
-    mode = (
-        data.get("mode")
-        or "dubte"
-    ).strip().lower()
-
     if not message:
-        return json_error(
-            "Escriu una pregunta."
-        )
+
+        return jsonify({
+            "ok": False,
+            "error": (
+                "Escriu alguna cosa "
+                "per a la IA."
+            )
+        }), 400
 
     user_id = session["user_id"]
 
@@ -1894,15 +2435,23 @@ def ai():
             name,
             subject,
             due_date,
-            estimated_minutes,
             difficulty,
-            status
+            status,
+            estimated_minutes
+
         FROM tasks
+
         WHERE user_id = %s
-        ORDER BY due_date NULLS LAST
-        LIMIT 20
+        AND status != 'completada'
+
+        ORDER BY
+            due_date NULLS LAST
+
+        LIMIT 15
         """,
-        (user_id,),
+        (
+            user_id,
+        ),
         fetch=True
     )
 
@@ -1911,147 +2460,88 @@ def ai():
         SELECT
             subject,
             exam_date,
-            syllabus,
             difficulty,
+            syllabus,
             study_minutes
+
         FROM exams
+
         WHERE user_id = %s
-        ORDER BY exam_date ASC
-        LIMIT 20
+
+        ORDER BY
+            exam_date
+
+        LIMIT 10
         """,
-        (user_id,),
+        (
+            user_id,
+        ),
         fetch=True
     )
 
     try:
+
         from services.ai import ask_ai
 
-        result = ask_ai(
-            message=message,
-            mode=mode,
-            tasks=serialize_many(tasks),
-            exams=serialize_many(exams)
+        answer = ask_ai(
+            mode,
+            message,
+            {
+                "tasques":
+                    serialize_many(tasks),
+
+                "examens":
+                    serialize_many(exams)
+            }
         )
 
     except Exception as exc:
-        print("AI ERROR:", repr(exc))
 
-        result = (
-            "Ara mateix no puc connectar amb el servei "
-            "d'intel·ligència artificial. "
-            "Pots tornar-ho a provar d'aquí una estona."
+        print(
+            "AI ERROR:",
+            repr(exc)
+        )
+
+        answer = (
+            "Ara mateix no puc "
+            "connectar amb el servei d'IA."
         )
 
     log_activity(
-        "ai_chat",
+        "ai_use",
         mode
     )
 
     return jsonify({
         "ok": True,
-        "response": result,
-        "message": result
+        "mode": mode,
+        "answer": answer
     })
 
 
-@app.post("/api/ai/test")
-@login_required
-def ai_test():
-    data = request.get_json(silent=True) or {}
-
-    subject = (
-        data.get("subject")
-        or "General"
-    ).strip()
-
-    topic = (
-        data.get("topic")
-        or data.get("message")
-        or ""
-    ).strip()
-
-    difficulty = normalize_difficulty(
-        data.get("difficulty")
-    )
-
-    try:
-        from services.ai import generate_test
-
-        result = generate_test(
-            subject=subject,
-            topic=topic,
-            difficulty=difficulty
-        )
-
-    except Exception as exc:
-        print("AI TEST ERROR:", repr(exc))
-
-        result = {
-            "title": f"Test de {subject}",
-            "questions": [
-                {
-                    "question": (
-                        "Quin aspecte vols practicar "
-                        "en aquest test?"
-                    ),
-                    "options": [
-                        "Conceptes bàsics",
-                        "Aplicació",
-                        "Problemes",
-                        "Repàs"
-                    ],
-                    "correct": 0,
-                    "explanation": (
-                        "Pots configurar la IA per "
-                        "generar preguntes automàtiques."
-                    )
-                }
-            ]
-        }
-
-    log_activity(
-        "ai_test_generated",
-        subject
-    )
-
-    return jsonify({
-        "ok": True,
-        "test": result
-    })
-
-
-@app.route(
-    "/api/recommendations",
-    methods=["GET"]
-)
-@app.route(
-    "/api/ai/recommendations",
-    methods=["GET"]
-)
+@app.get("/api/recommendations")
+@app.get("/api/ai/recommendations")
 @login_required
 def recommendations():
+
     user_id = session["user_id"]
 
     tasks = db_query(
         """
         SELECT *
         FROM tasks
+
         WHERE user_id = %s
-          AND LOWER(COALESCE(status, 'pendent'))
-          != 'completada'
+        AND status != 'completada'
+
         ORDER BY
-            due_date NULLS LAST,
-            CASE
-                WHEN LOWER(difficulty) = 'alta'
-                THEN 1
-                WHEN LOWER(difficulty) = 'mitjana'
-                THEN 2
-                ELSE 3
-            END,
-            id DESC
+            due_date NULLS LAST
+
         LIMIT 10
         """,
-        (user_id,),
+        (
+            user_id,
+        ),
         fetch=True
     )
 
@@ -2059,84 +2549,110 @@ def recommendations():
         """
         SELECT *
         FROM exams
+
         WHERE user_id = %s
-          AND exam_date >= CURRENT_DATE
-        ORDER BY exam_date ASC
+
+        ORDER BY
+            exam_date
+
         LIMIT 10
         """,
-        (user_id,),
+        (
+            user_id,
+        ),
         fetch=True
     )
 
-    recommendations_list = []
+    try:
 
-    for task in tasks:
-        due = task.get("due_date")
+        from services.ai import build_recommendations
 
-        reason = "És una tasca pendent."
+        items = build_recommendations(
+            tasks,
+            exams
+        )
 
-        if due:
-            try:
-                days = (
-                    parse_date(due)
-                    - today()
-                ).days
+    except Exception as exc:
 
-                if days <= 1:
-                    reason = (
-                        "Té la data d'entrega molt a prop."
-                    )
-                elif days <= 3:
-                    reason = (
-                        "La data d'entrega és propera."
-                    )
-            except Exception:
-                pass
+        print(
+            "RECOMMENDATIONS ERROR:",
+            repr(exc)
+        )
 
-        if str(task.get("difficulty")).lower() == "alta":
-            reason += " La dificultat indicada és alta."
+        items = []
 
-        recommendations_list.append({
-            "type": "task",
-            "id": task["id"],
-            "title": task["name"],
-            "subject": task.get("subject"),
-            "reason": reason
-        })
+    for item in items:
 
-    for exam in exams:
-        exam_date = exam.get("exam_date")
-
-        reason = "Tens un examen pròxim."
-
-        if exam_date:
-            try:
-                days = (
-                    parse_date(exam_date)
-                    - today()
-                ).days
-
-                reason = (
-                    f"L'examen és d'aquí "
-                    f"{max(days, 0)} dies."
-                )
-            except Exception:
-                pass
-
-        recommendations_list.append({
-            "type": "exam",
-            "id": exam["id"],
-            "title": (
-                f"Examen de {exam.get('subject', '')}"
-            ),
-            "subject": exam.get("subject"),
-            "reason": reason
-        })
+        log_activity(
+            "ai_recommendation",
+            item.get(
+                "title",
+                ""
+            )
+        )
 
     return jsonify({
         "ok": True,
-        "recommendations": recommendations_list[:10]
+        "recommendations":
+            items
     })
+
+
+@app.post("/api/ai/test")
+@login_required
+def ai_test():
+
+    data = request.get_json(
+        silent=True
+    ) or {}
+
+    topic = str(
+        data.get(
+            "topic",
+            data.get(
+                "message",
+                ""
+            )
+        )
+    ).strip()
+
+    if not topic:
+
+        return jsonify({
+            "ok": False,
+            "error": (
+                "Indica un tema "
+                "per generar el test."
+            )
+        }), 400
+
+    try:
+
+        from services.ai import generate_test
+
+        result = generate_test(
+            topic
+        )
+
+        return jsonify({
+            "ok": True,
+            "test": result
+        })
+
+    except Exception as exc:
+
+        print(
+            "AI TEST ERROR:",
+            repr(exc)
+        )
+
+        return jsonify({
+            "ok": False,
+            "error": (
+                "No s'ha pogut "
+                "generar el test."
+            )
+        }), 500
 
 
 # ============================================================
@@ -2145,29 +2661,38 @@ def recommendations():
 
 @app.errorhandler(404)
 def not_found(error):
-    if request.path.startswith("/api/"):
+
+    if request.path.startswith(
+        "/api/"
+    ):
+
         return jsonify({
             "ok": False,
-            "error": "Ruta no trobada."
+            "error": "Recurs no trobat."
         }), 404
 
     return render_template(
-        "error.html",
-        code=404
+        "error.html"
     ), 404
 
 
 @app.errorhandler(500)
 def server_error(error):
-    if request.path.startswith("/api/"):
+
+    if request.path.startswith(
+        "/api/"
+    ):
+
         return jsonify({
             "ok": False,
-            "error": "Error intern del servidor."
+            "error": (
+                "Error intern "
+                "del servidor."
+            )
         }), 500
 
     return render_template(
-        "error.html",
-        code=500
+        "error.html"
     ), 500
 
 
@@ -2175,14 +2700,15 @@ def server_error(error):
 # INICI
 # ============================================================
 
-ensure_db()
-
-
 if __name__ == "__main__":
+
     app.run(
         host="0.0.0.0",
         port=int(
-            os.getenv("PORT", "5000")
+            os.getenv(
+                "PORT",
+                "5000"
+            )
         ),
         debug=True
     )
