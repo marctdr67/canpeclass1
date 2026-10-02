@@ -715,6 +715,9 @@ def dashboard():
             "ok": True,
             "tasks": serialize_many(tasks),
             "exams": serialize_many(exams),
+            "pending_count": len(pending),
+            "urgent_count": len(urgent),
+            "progress": progress,
             "stats": {
                 "pending": len(pending),
                 "completed": completed_count,
@@ -1548,12 +1551,14 @@ def create_class_content(class_id):
         data.get("body", data.get("description", ""))
     ).strip()
 
+    # El frontend actual utilitza "kind" i "event_date".
+    # Mantenim també els noms antics per compatibilitat.
     content_type = str(
-        data.get("content_type", data.get("type", "avis"))
+        data.get("kind", data.get("content_type", data.get("type", "avis")))
     ).strip()
 
     due_date = parse_date(
-        data.get("due_date")
+        data.get("event_date", data.get("due_date"))
     )
 
     if not title:
@@ -1984,6 +1989,76 @@ def recommendations():
         "ok": True,
         "recommendations": recommendations
     })
+
+
+# ============================================================
+# PERFIL
+# ============================================================
+
+@app.put("/api/profile")
+@login_required
+def update_profile():
+    data = request.get_json(silent=True) or {}
+    user_id = session["user_id"]
+
+    name = str(data.get("name", data.get("username", ""))).strip()
+    email = str(data.get("email", "")).strip().lower()
+
+    if not name or not email:
+        return jsonify({
+            "ok": False,
+            "error": "El nom i el correu són obligatoris."
+        }), 400
+
+    try:
+        existing = db_query(
+            """
+            SELECT id FROM users
+            WHERE LOWER(email) = LOWER(%s)
+            AND id <> %s
+            """,
+            (email, user_id),
+            fetch=True,
+            one=True
+        )
+
+        if existing:
+            return jsonify({
+                "ok": False,
+                "error": "Aquest correu ja està utilitzat."
+            }), 409
+
+        row = db_query(
+            """
+            UPDATE users
+            SET name = %s, email = %s
+            WHERE id = %s
+            RETURNING id, name AS username, email, role, created_at
+            """,
+            (name, email, user_id),
+            fetch=True,
+            one=True
+        )
+
+        if not row:
+            return jsonify({
+                "ok": False,
+                "error": "Usuari no trobat."
+            }), 404
+
+        log_activity("profile_updated", "Perfil actualitzat")
+
+        return jsonify({
+            "ok": True,
+            "user": serialize(row)
+        })
+
+    except Exception as exc:
+        print("PROFILE ERROR:", repr(exc))
+        return jsonify({
+            "ok": False,
+            "error": "No s'ha pogut actualitzar el perfil."
+        }), 500
 
 
 # ============================================================
