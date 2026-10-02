@@ -97,142 +97,8 @@ def db_query(sql, params=None, fetch=False, one=False):
 
 
 def init_db():
-    """
-    Crea les taules que necessita MiniClassroom si encara no existeixen.
-    No elimina dades existents.
-    """
-
-    statements = [
-
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            username TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'alumne',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-
-        """
-        CREATE TABLE IF NOT EXISTS classes (
-            id SERIAL PRIMARY KEY,
-            name TEXT NOT NULL,
-            subject TEXT,
-            code VARCHAR(6) UNIQUE NOT NULL,
-            teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-
-        """
-        CREATE TABLE IF NOT EXISTS class_students (
-            class_id INTEGER REFERENCES classes(id) ON DELETE CASCADE,
-            student_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (class_id, student_id)
-        )
-        """,
-
-        """
-        CREATE TABLE IF NOT EXISTS tasks (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            class_id INTEGER REFERENCES classes(id) ON DELETE SET NULL,
-            name TEXT NOT NULL,
-            subject TEXT,
-            description TEXT,
-            due_date DATE,
-            estimated_minutes INTEGER DEFAULT 30,
-            difficulty TEXT DEFAULT 'mitjana',
-            status TEXT DEFAULT 'pendent',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            completed_at TIMESTAMP
-        )
-        """,
-
-        """
-        CREATE TABLE IF NOT EXISTS exams (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            class_id INTEGER REFERENCES classes(id) ON DELETE SET NULL,
-            subject TEXT NOT NULL,
-            exam_date DATE NOT NULL,
-            syllabus TEXT,
-            difficulty TEXT DEFAULT 'mitjana',
-            study_minutes INTEGER DEFAULT 120,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-
-        """
-        CREATE TABLE IF NOT EXISTS class_content (
-            id SERIAL PRIMARY KEY,
-            class_id INTEGER REFERENCES classes(id) ON DELETE CASCADE,
-            author_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            content_type TEXT NOT NULL DEFAULT 'avis',
-            title TEXT NOT NULL,
-            body TEXT,
-            due_date DATE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-
-        """
-        CREATE TABLE IF NOT EXISTS study_sessions (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
-            exam_id INTEGER REFERENCES exams(id) ON DELETE SET NULL,
-            session_date DATE NOT NULL,
-            minutes INTEGER DEFAULT 0,
-            notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-
-        """
-        CREATE TABLE IF NOT EXISTS test_results (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            subject TEXT,
-            score INTEGER DEFAULT 0,
-            total INTEGER DEFAULT 5,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-
-        """
-        CREATE TABLE IF NOT EXISTS activity_log (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            event_type TEXT NOT NULL,
-            details TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    ]
-
-    conn = None
-
-    try:
-        conn = get_db()
-
-        with conn.cursor() as cur:
-            for statement in statements:
-                cur.execute(statement)
-
-        conn.commit()
-
-    except Exception:
-        if conn:
-            conn.rollback()
-        raise
-
-    finally:
-        if conn:
-            conn.close()
+    """Comprova la connexió; l'esquema existent de Supabase no es modifica."""
+    db_query("SELECT 1")
 
 
 def ensure_db():
@@ -294,7 +160,7 @@ def current_user():
     try:
         return db_query(
             """
-            SELECT id, username, email, role, created_at
+            SELECT id, name AS username, email, CASE WHEN LOWER(role) IN ('teacher','professor') THEN 'professor' ELSE 'alumne' END AS role, created_at
             FROM users
             WHERE id = %s
             """,
@@ -365,6 +231,11 @@ def log_activity(event_type, details=""):
     except Exception as exc:
         print("ACTIVITY LOG ERROR:", repr(exc))
 
+
+
+def normalize_difficulty(value):
+    value = "" if value is None else str(value).strip().lower()
+    return {"1":"baixa", "2":"mitjana", "3":"alta", "baixa":"baixa", "mitjana":"mitjana", "alta":"alta"}.get(value, "mitjana")
 
 def generate_class_code():
     alphabet = string.ascii_uppercase + string.digits
@@ -477,22 +348,26 @@ def register():
 
         password_hash = generate_password_hash(password)
 
+        db_role = "teacher" if role == "professor" else "student"
+
         user = db_query(
             """
             INSERT INTO users
-            (username, email, password_hash, role)
+            (name, email, password_hash, role)
             VALUES (%s, %s, %s, %s)
-            RETURNING id, username, email, role, created_at
+            RETURNING id, name AS username, email, role, created_at
             """,
             (
                 username,
                 email,
                 password_hash,
-                role
+                db_role
             ),
             fetch=True,
             one=True
         )
+
+        user["role"] = "professor" if str(user["role"]).lower() in ("teacher", "professor") else "alumne"
 
         session.clear()
         session["user_id"] = user["id"]
@@ -536,7 +411,7 @@ def login():
             """
             SELECT
                 id,
-                username,
+                name AS username,
                 email,
                 password_hash,
                 role,
@@ -567,11 +442,12 @@ def login():
         session.clear()
         session["user_id"] = user["id"]
 
+        normalized_role = "professor" if str(user["role"]).lower() in ("teacher", "professor") else "alumne"
         safe_user = {
             "id": user["id"],
             "username": user["username"],
             "email": user["email"],
-            "role": user["role"]
+            "role": normalized_role
         }
 
         log_activity("login", "Inici de sessió")
@@ -715,6 +591,13 @@ def dashboard():
             "ok": True,
             "tasks": serialize_many(tasks),
             "exams": serialize_many(exams),
+            "pending_count": len(pending),
+            "urgent_count": len(urgent),
+            "progress": progress,
+            "study": {
+                "completed": int(study["minutes"] or 0),
+                "planned": sum(int(t.get("estimated_minutes") or 0) for t in tasks if t["status"] != "completada")
+            },
             "stats": {
                 "pending": len(pending),
                 "completed": completed_count,
@@ -802,9 +685,7 @@ def create_task():
     except Exception:
         estimated = 30
 
-    difficulty = str(
-        data.get("difficulty", "mitjana")
-    ).strip()
+    difficulty = normalize_difficulty(data.get("difficulty", "mitjana"))
 
     status = str(
         data.get("status", "pendent")
@@ -858,7 +739,7 @@ def create_task():
     }), 201
 
 
-@app.put("/api/tasks/<int:task_id>")
+@app.route("/api/tasks/<int:task_id>", methods=["PUT", "PATCH"])
 @login_required
 def update_task(task_id):
 
@@ -910,10 +791,7 @@ def update_task(task_id):
     except Exception:
         estimated = existing["estimated_minutes"] or 30
 
-    difficulty = data.get(
-        "difficulty",
-        existing["difficulty"]
-    )
+    difficulty = normalize_difficulty(data.get("difficulty", existing["difficulty"]))
 
     status = data.get(
         "status",
@@ -1064,9 +942,7 @@ def create_exam():
         data.get("syllabus", "")
     ).strip()
 
-    difficulty = str(
-        data.get("difficulty", "mitjana")
-    ).strip()
+    difficulty = normalize_difficulty(data.get("difficulty", "mitjana"))
 
     try:
         study_minutes = int(
@@ -1156,10 +1032,7 @@ def update_exam(exam_id):
         existing["syllabus"]
     )
 
-    difficulty = data.get(
-        "difficulty",
-        existing["difficulty"]
-    )
+    difficulty = normalize_difficulty(data.get("difficulty", existing["difficulty"]))
 
     study_minutes = data.get(
         "study_minutes",
@@ -1243,7 +1116,9 @@ def get_classes():
                 """
                 SELECT
                     c.*,
-                    COUNT(cs.student_id) AS student_count
+                    COUNT(cs.student_id) AS student_count,
+                    'professor' AS membership,
+                    NULL AS teacher
                 FROM classes c
                 LEFT JOIN class_students cs
                     ON cs.class_id = c.id
@@ -1261,7 +1136,10 @@ def get_classes():
                 """
                 SELECT
                     c.*,
-                    u.username AS teacher_name
+                    u.name AS teacher_name,
+                    u.name AS teacher,
+                    'alumne' AS membership,
+                    0 AS student_count
                 FROM classes c
                 JOIN class_students cs
                     ON cs.class_id = c.id
@@ -1434,7 +1312,7 @@ def class_detail(class_id):
         """
         SELECT
             c.*,
-            u.username AS teacher_name
+            u.name AS teacher_name
         FROM classes c
         LEFT JOIN users u
             ON u.id = c.teacher_id
@@ -1484,7 +1362,7 @@ def class_detail(class_id):
         """
         SELECT
             cc.*,
-            u.username AS author_name
+            u.name AS author_name
         FROM class_content cc
         LEFT JOIN users u
             ON u.id = cc.author_id
@@ -1503,13 +1381,13 @@ def class_detail(class_id):
             """
             SELECT
                 u.id,
-                u.username,
+                u.name AS username,
                 u.email
             FROM class_students cs
             JOIN users u
                 ON u.id = cs.student_id
             WHERE cs.class_id = %s
-            ORDER BY u.username
+            ORDER BY u.name
             """,
             (class_id,),
             fetch=True
@@ -1519,7 +1397,8 @@ def class_detail(class_id):
         "ok": True,
         "class": serialize(classroom),
         "content": serialize_many(content),
-        "students": serialize_many(students)
+        "students": serialize_many(students),
+        "can_manage": classroom["teacher_id"] == user["id"]
     })
 
 
@@ -1754,6 +1633,13 @@ def progress():
         "study_minutes": int(
             study["total_minutes"] or 0
         ),
+        "tasks": {"total": total, "completed": completed},
+        "study": {"completed": int(study["total_minutes"] or 0), "planned": 0},
+        "tests": serialize_many(db_query(
+            "SELECT subject AS topic, score, total, created_at FROM test_results WHERE user_id = %s ORDER BY created_at DESC LIMIT 30",
+            (user_id,), fetch=True
+        )),
+        "week": serialize_many(weekly),
         "weekly": serialize_many(weekly)
     })
 
@@ -1762,7 +1648,8 @@ def progress():
 # TESTS
 # ============================================================
 
-@app.post("/api/tests/result")
+@app.route("/api/tests/result", methods=["POST"])
+@app.route("/api/test-results", methods=["POST"])
 @login_required
 def save_test_result():
 
@@ -1776,7 +1663,7 @@ def save_test_result():
         total = 5
 
     subject = str(
-        data.get("subject", "")
+        data.get("subject", data.get("topic", ""))
     ).strip()
 
     row = db_query(
@@ -1937,11 +1824,32 @@ def ai():
     })
 
 
+
+@app.post("/api/ai/test")
+@login_required
+def ai_test():
+    data = request.get_json(silent=True) or {}
+    topic = str(data.get("topic", "")).strip()
+    if not topic:
+        return jsonify({"ok": False, "error": "Indica el tema del test."}), 400
+    try:
+        from services.ai import generate_test
+        result = generate_test(topic)
+        questions = result.get("questions", []) if isinstance(result, dict) else []
+        if len(questions) != 5:
+            return jsonify({"ok": False, "error": "No s'ha pogut generar un test de 5 preguntes."}), 502
+        log_activity("test_generated", topic)
+        return jsonify({"ok": True, "topic": result.get("topic", topic), "questions": questions})
+    except Exception as exc:
+        print("AI TEST ERROR:", repr(exc))
+        return jsonify({"ok": False, "error": "No s'ha pogut generar el test."}), 500
+
 # ============================================================
 # RECOMANACIONS
 # ============================================================
 
-@app.get("/api/recommendations")
+@app.route("/api/recommendations", methods=["GET"])
+@app.route("/api/ai/recommendations", methods=["GET"])
 @login_required
 def recommendations():
 
