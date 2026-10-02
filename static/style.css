@@ -3943,3 +3943,592 @@ img {
     width: 100%;
   }
 }
+
+/* =========================================================
+   MINICLASSROOM — AULA DIGITAL
+   Disseny inspirat en Google Classroom
+   Identitat Institut Can Peixauet
+   ========================================================= */
+
+.classroom-shell {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 8px 0 60px;
+}
+
+/* ---------- CAPÇALERA DE LA CLASSE ---------- */
+
+.classroom-banner {
+  position: relative;
+  overflow: hidden;
+  min-height: 210px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+  padding: 30px 34px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.08);
+  background:
+    linear-gradient(135deg, rgba(8,145,209,.95), rgba(8,119,173,.82)),
+    #0b91d1;
+  box-shadow: 0 16px 42px rgba(0,0,0,.22);
+  isolation: isolate;
+}
+
+.classroom-banner::before {
+  content: "";
+  position: absolute;
+  width: 340px;
+  height: 340px;
+  right: -100px;
+  top: -150px;
+  border-radius: 50%;
+  background: rgba(255,230,0,.22);
+  z-index: -1;
+}
+
+.classroom-banner::after {
+  content: "";
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  right: 180px;
+  bottom: -150px;
+  border-radius: 50%;
+  background: rgba(237,28,36,.18);
+  z-index: -1;
+}
+
+.classroom-banner > div:first-child {
+  position: relative;
+  z-index: 2;
+}
+
+.classroom-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 24px;
+  padding: 7px 11px;
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(0,0,0,.14);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .18s ease;
+}
+
+.classroom-back:hover {
+  background: rgba(0,0,0,.25);
+  transform: translateX(-2px);
+}
+
+.classroom-kicker {
+  margin-bottom: 6px;
+  color: #ffe600;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.classroom-banner h2 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.05;
+  letter-spacing: -.025em;
+}
+
+.classroom-banner p {
+  margin: 11px 0 0;
+  color: rgba(255,255,255,.82);
+  font-size: 14px;
+}
+
+.classroom-banner p strong {
+  color: #fff;
+}
+
+.classroom-code {
+  position: relative;
+  z-index: 2;
+  min-width: 110px;
+  padding: 13px 15px;
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 10px;
+  color: #292929;
+  background: #ffe600;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: .13em;
+  text-align: center;
+}
+
+/* ---------- PESTANYES ---------- */
+
+.classroom-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 58px;
+  margin-top: 12px;
+  padding: 0 8px;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  overflow-x: auto;
+}
+
+.classroom-tabs .class-tab {
+  position: relative;
+  min-height: 58px;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 8px 8px 0 0;
+  color: #929ba8;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color .18s ease, background .18s ease;
+}
+
+.classroom-tabs .class-tab:hover {
+  color: #fff;
+  background: rgba(255,255,255,.045);
+}
+
+.classroom-tabs .class-tab.active {
+  color: #fff;
+  background: rgba(11,145,209,.10);
+}
+
+.classroom-tabs .class-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: #0b91d1;
+}
+
+/* ---------- CONTINGUT ---------- */
+
+.classroom-grid {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 20px;
+  align-items: start;
+}
+
+.classroom-aside {
+  display: grid;
+  gap: 14px;
+}
+
+.classroom-card {
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: #111923;
+  box-shadow: 0 8px 24px rgba(0,0,0,.14);
+}
+
+.classroom-card h4 {
+  margin: 0 0 13px;
+  color: #929ba8;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.code-large {
+  display: block;
+  margin-bottom: 14px;
+  color: #fff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 21px;
+  letter-spacing: .12em;
+}
+
+.classroom-card .btn {
+  width: 100%;
+}
+
+.upcoming-item {
+  display: grid;
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255,255,255,.07);
+}
+
+.upcoming-item:first-of-type {
+  border-top: 0;
+}
+
+.upcoming-item b {
+  color: #e9edf2;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.upcoming-item small {
+  color: #7e8997;
+  font-size: 11px;
+}
+
+/* ---------- PANELS ---------- */
+
+.classroom-main {
+  min-width: 0;
+}
+
+.class-pane {
+  display: none;
+}
+
+.class-pane.active {
+  display: block;
+}
+
+/* ---------- TAULER ---------- */
+
+.classroom-publish {
+  margin-bottom: 14px;
+}
+
+.stream-list {
+  display: grid;
+  gap: 12px;
+}
+
+.class-post {
+  display: grid;
+  grid-template-columns: 42px minmax(0,1fr);
+  gap: 13px;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: #111923;
+  box-shadow: 0 7px 22px rgba(0,0,0,.12);
+  transition: border-color .18s ease, transform .18s ease;
+}
+
+.class-post:hover {
+  border-color: rgba(11,145,209,.35);
+  transform: translateY(-1px);
+}
+
+.post-avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #0b91d1;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.post-avatar.small {
+  width: 34px;
+  height: 34px;
+  font-size: 11px;
+}
+
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 9px;
+}
+
+.post-meta b {
+  color: #e8edf2;
+  font-size: 13px;
+}
+
+.post-meta span {
+  color: #6f7a87;
+  font-size: 11px;
+}
+
+.class-post h3 {
+  margin: 0 0 7px;
+  color: #fff;
+  font-size: 16px;
+}
+
+.class-post p {
+  margin: 0;
+  color: #9ba5b1;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.post-date {
+  display: inline-flex;
+  margin-top: 12px;
+  padding: 6px 9px;
+  border-radius: 7px;
+  color: #ffe600;
+  background: rgba(255,230,0,.08);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ---------- TREBALL DE CLASSE ---------- */
+
+.work-list {
+  display: grid;
+  gap: 12px;
+}
+
+.work-card {
+  position: relative;
+  padding: 19px 20px 18px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: #111923;
+  transition: border-color .18s ease, transform .18s ease;
+}
+
+.work-card:hover {
+  border-color: rgba(11,145,209,.35);
+  transform: translateY(-1px);
+}
+
+.work-type {
+  display: inline-flex;
+  margin-bottom: 10px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  color: #0b91d1;
+  background: rgba(11,145,209,.10);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.work-card h3 {
+  margin: 0 0 7px;
+  color: #fff;
+  font-size: 16px;
+}
+
+.work-card p {
+  margin: 0 0 12px;
+  color: #9ba5b1;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.work-card small {
+  color: #717d8a;
+  font-size: 11px;
+}
+
+/* ---------- PERSONES ---------- */
+
+.people-card {
+  padding: 21px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: #111923;
+}
+
+.people-card h3 {
+  margin: 0 0 13px;
+  color: #fff;
+  font-size: 15px;
+}
+
+.people-card h3:not(:first-child) {
+  margin-top: 27px;
+  padding-top: 19px;
+  border-top: 1px solid rgba(255,255,255,.07);
+}
+
+.person-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 50px;
+  border-bottom: 1px solid rgba(255,255,255,.055);
+}
+
+.person-row:last-child {
+  border-bottom: 0;
+}
+
+.person-row b,
+.person-row span:not(.post-avatar) {
+  color: #dce2e8;
+  font-size: 13px;
+}
+
+/* ---------- QUALIFICACIONS ---------- */
+
+.grades-card,
+.qualifications-card {
+  padding: 21px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: #111923;
+}
+
+.grades-card h3,
+.qualifications-card h3 {
+  margin: 0 0 16px;
+  color: #fff;
+  font-size: 16px;
+}
+
+/* ---------- ESTAT BUIT ---------- */
+
+.class-empty {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 35px;
+  border: 1px dashed rgba(255,255,255,.12);
+  border-radius: 14px;
+  background: rgba(255,255,255,.018);
+  text-align: center;
+}
+
+.class-empty strong {
+  color: #dce2e8;
+  font-size: 14px;
+}
+
+.class-empty span {
+  max-width: 430px;
+  color: #727e8c;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ---------- BOTONS DINS DE L'AULA ---------- */
+
+.classroom-shell .btn {
+  min-height: 39px;
+  border-radius: 9px;
+  font-weight: 750;
+}
+
+.classroom-shell .btn.primary {
+  border: 1px solid #0b91d1;
+  color: #fff;
+  background: #0b91d1;
+}
+
+.classroom-shell .btn.primary:hover {
+  background: #0877ad;
+}
+
+.classroom-shell .btn.secondary {
+  border: 1px solid rgba(255,255,255,.12);
+  color: #dfe5eb;
+  background: rgba(255,255,255,.045);
+}
+
+.classroom-shell .btn.secondary:hover {
+  border-color: rgba(11,145,209,.5);
+  background: rgba(11,145,209,.08);
+}
+
+/* ---------- TOPBAR MÉS NET ---------- */
+
+.topbar {
+  backdrop-filter: blur(16px);
+}
+
+.topbar .search {
+  border-radius: 10px;
+}
+
+/* ---------- RESPONSIVE ---------- */
+
+@media (max-width: 900px) {
+  .classroom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .classroom-aside {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+
+  .classroom-banner {
+    min-height: 190px;
+  }
+}
+
+@media (max-width: 620px) {
+  .classroom-shell {
+    padding-top: 0;
+  }
+
+  .classroom-banner {
+    min-height: 180px;
+    display: block;
+    padding: 22px;
+    border-radius: 14px;
+  }
+
+  .classroom-back {
+    margin-bottom: 18px;
+  }
+
+  .classroom-banner h2 {
+    font-size: 28px;
+  }
+
+  .classroom-code {
+    display: inline-flex;
+    min-width: 0;
+    margin-top: 18px;
+  }
+
+  .classroom-tabs {
+    padding: 0;
+  }
+
+  .classroom-tabs .class-tab {
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .classroom-grid {
+    margin-top: 14px;
+  }
+
+  .classroom-aside {
+    grid-template-columns: 1fr;
+  }
+
+  .class-post {
+    grid-template-columns: 34px minmax(0,1fr);
+    padding: 14px;
+  }
+
+  .post-avatar {
+    width: 34px;
+    height: 34px;
+  }
+}
