@@ -4532,3 +4532,417 @@ img {
     height: 34px;
   }
 }
+
+/* =========================================================
+   AULA DIGITAL — ESTILS DELS ELEMENTS REALS DE L'APP.JS
+========================================================= */
+
+.classroom-detail {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-bottom: 60px;
+}
+
+/* CAPÇALERA */
+
+.classroom-cover {
+  position: relative;
+  min-height: 230px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  padding: 32px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.08);
+  background:
+    linear-gradient(135deg, #0877ad 0%, #0b91d1 55%, #075477 100%);
+  box-shadow: 0 18px 45px rgba(0,0,0,.22);
+}
+
+.classroom-cover-pattern {
+  position: absolute;
+  width: 430px;
+  height: 430px;
+  right: -130px;
+  top: -220px;
+  border-radius: 50%;
+  border: 55px solid rgba(255,255,255,.06);
+  pointer-events: none;
+}
+
+.classroom-cover-pattern::after {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  right: 40px;
+  top: 80px;
+  border-radius: 50%;
+  background: rgba(255,230,0,.14);
+}
+
+.classroom-cover-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+}
+
+.classroom-cover h1 {
+  margin: 7px 0 4px;
+  color: #fff;
+  font-size: clamp(30px, 4vw, 43px);
+  line-height: 1.05;
+  letter-spacing: -.035em;
+}
+
+.classroom-cover p {
+  margin: 0;
+  color: rgba(255,255,255,.82);
+  font-size: 14px;
+}
+
+.classroom-cover .eyebrow {
+  color: #ffe600;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+
+.class-code-large {
+  min-width: 145px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 11px;
+  background: rgba(0,0,0,.18);
+  backdrop-filter: blur(10px);
+  text-align: center;
+}
+
+.class-code-large span {
+  display: block;
+  margin-bottom: 7px;
+  color: rgba(255,255,255,.65);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.class-code-large strong {
+  color: #fff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 18px;
+  letter-spacing: .12em;
+}
+
+/* PESTANYES REALS DE L'APP */
+
+.classroom-detail .classroom-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 58px;
+  margin-top: 10px;
+  padding: 0 8px;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  overflow-x: auto;
+}
+
+.classroom-detail .classroom-tab {
+  position: relative;
+  min-height: 58px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 8px 8px 0 0;
+  color: #8d98a5;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: .18s ease;
+}
+
+.classroom-detail .classroom-tab:hover {
+  color: #fff;
+  background: rgba(255,255,255,.04);
+}
+
+.classroom-detail .classroom-tab.active {
+  color: #fff;
+  background: rgba(11,145,209,.09);
+}
+
+.classroom-detail .classroom-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: #0b91d1;
+}
+
+/* COS DE L'AULA */
+
+.classroom-body {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.classroom-layout {
+  display: grid;
+  grid-template-columns: 270px minmax(0,1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.classroom-aside {
+  display: grid;
+  gap: 14px;
+}
+
+.classroom-main {
+  min-width: 0;
+}
+
+/* TARGETES LATERALS */
+
+.classroom-detail .class-info-card,
+.classroom-detail .classroom-aside .card {
+  padding: 19px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: #111923;
+  box-shadow: 0 8px 24px rgba(0,0,0,.14);
+}
+
+.classroom-detail .class-info-card h3 {
+  margin: 8px 0 17px;
+  color: #fff;
+  font-size: 16px;
+}
+
+.classroom-detail .info-row,
+.classroom-detail .class-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+.classroom-detail .info-row:first-of-type,
+.classroom-detail .class-info-row:first-of-type {
+  border-top: 0;
+}
+
+.classroom-detail .info-row span,
+.classroom-detail .class-info-row span {
+  color: #778391;
+  font-size: 11px;
+}
+
+.classroom-detail .info-row strong,
+.classroom-detail .class-info-row strong {
+  color: #dfe5ea;
+  font-size: 12px;
+  text-align: right;
+}
+
+.classroom-detail .mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* PUBLICACIONS */
+
+.classroom-stream,
+.classroom-work,
+.classroom-people,
+.classroom-grades {
+  display: grid;
+  gap: 13px;
+}
+
+.classroom-post {
+  padding: 19px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: #111923;
+  box-shadow: 0 7px 22px rgba(0,0,0,.12);
+}
+
+.classroom-post h3 {
+  margin: 0 0 7px;
+  color: #fff;
+  font-size: 16px;
+}
+
+.classroom-post p {
+  margin: 0;
+  color: #99a4b0;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+/* TARGETES DE TREBALL */
+
+.classroom-work-card {
+  padding: 19px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: #111923;
+  transition: .18s ease;
+}
+
+.classroom-work-card:hover {
+  border-color: rgba(11,145,209,.35);
+  transform: translateY(-1px);
+}
+
+.classroom-work-card h3 {
+  margin: 0 0 7px;
+  color: #fff;
+  font-size: 16px;
+}
+
+.classroom-work-card p {
+  margin: 0;
+  color: #929daa;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* PERSONES */
+
+.classroom-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+.classroom-person:last-child {
+  border-bottom: 0;
+}
+
+.classroom-person-avatar {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  border-radius: 50%;
+  color: #fff;
+  background: #0b91d1;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.classroom-person strong {
+  color: #e4e9ed;
+  font-size: 13px;
+}
+
+.classroom-person small {
+  display: block;
+  margin-top: 3px;
+  color: #737f8c;
+  font-size: 10px;
+}
+
+/* ESTAT BUIT */
+
+.classroom-detail .empty-state {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  padding: 30px;
+  border: 1px dashed rgba(255,255,255,.12);
+  border-radius: 14px;
+  background: rgba(255,255,255,.018);
+  text-align: center;
+}
+
+.classroom-loading {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  color: #778391;
+  font-size: 13px;
+}
+
+/* ENTREGUES */
+
+.classroom-aside .upcoming-item {
+  padding: 10px 0;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+.classroom-aside .upcoming-item:first-of-type {
+  border-top: 0;
+}
+
+.classroom-aside .upcoming-item b {
+  display: block;
+  color: #dfe5ea;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.classroom-aside .upcoming-item small {
+  display: block;
+  margin-top: 4px;
+  color: #737f8c;
+  font-size: 10px;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 900px) {
+  .classroom-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .classroom-cover-content {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .class-code-large {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 620px) {
+  .classroom-cover {
+    min-height: 190px;
+    padding: 22px;
+    border-radius: 14px;
+  }
+
+  .classroom-cover h1 {
+    font-size: 28px;
+  }
+
+  .classroom-detail .classroom-tabs {
+    padding: 0;
+  }
+
+  .classroom-detail .classroom-tab {
+    padding: 0 12px;
+    font-size: 12px;
+  }
+}
