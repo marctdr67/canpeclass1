@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MiniClassroom · Agenda d'estudi</title>
-  <meta name="theme-color" content="#0b0b10">
+  <title>MiniClassroom · Aula digital</title>
+  <meta name="theme-color" content="#ffffff">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 
@@ -12,129 +12,128 @@
 
 <div id="toast-root"></div>
 
-<!-- =========================
+<!-- =====================================================
      LOGIN / REGISTRE
-========================= -->
+===================================================== -->
 
-<div id="auth-view" class="auth-page">
+<div id="auth-view" class="auth-shell">
 
   <div class="auth-card">
 
-    <div class="auth-logo">✦</div>
+    <div class="brand brand-large">
+      <div class="brand-mark">M</div>
+      <div>MiniClassroom</div>
+    </div>
 
-    <h1>MiniClassroom</h1>
+    <p class="eyebrow">AULA DIGITAL</p>
 
-    <p>
-      La teva agenda d'estudi amb intel·ligència artificial.
+    <h1>Aprèn, organitza't<br><span>i avança.</span></h1>
+
+    <p class="auth-copy">
+      Un espai per tenir les classes, les tasques, els exàmens
+      i l'ajuda de la IA en un mateix lloc.
     </p>
 
     <div class="auth-tabs">
-      <button class="auth-tab active" data-auth="login">
+      <button class="auth-tab active" data-auth="login" type="button">
         Iniciar sessió
       </button>
-
-      <button class="auth-tab" data-auth="register">
+      <button class="auth-tab" data-auth="register" type="button">
         Crear compte
       </button>
     </div>
 
-    <!-- LOGIN -->
+    <form id="login-form" class="auth-form">
 
-    <form id="login-form">
-
-      <div class="form-group">
-        <label>Correu electrònic</label>
+      <label>
+        Correu electrònic
         <input
           name="email"
           type="email"
           placeholder="tu@exemple.cat"
+          autocomplete="email"
           required
         >
-      </div>
+      </label>
 
-      <div class="form-group mt-2">
-        <label>Contrasenya</label>
+      <label>
+        Contrasenya
         <input
           name="password"
           type="password"
-          placeholder="••••••••"
+          placeholder="La teva contrasenya"
+          autocomplete="current-password"
           required
         >
-      </div>
+      </label>
 
-      <button
-        class="btn btn-primary"
-        type="submit"
-        style="width:100%;margin-top:16px"
-      >
-        Entrar a MiniClassroom →
+      <button class="btn primary wide" type="submit">
+        Entrar a MiniClassroom
+        <span>→</span>
       </button>
 
     </form>
 
-    <!-- REGISTRE -->
+    <form id="register-form" class="auth-form hidden">
 
-    <form id="register-form" class="hidden">
-
-      <div class="form-group">
-        <label>Nom d'usuari</label>
+      <label>
+        Nom d'usuari
         <input
           name="username"
           placeholder="El teu nom"
+          autocomplete="name"
           required
         >
-      </div>
+      </label>
 
-      <div class="form-group mt-2">
-        <label>Correu electrònic</label>
+      <label>
+        Correu electrònic
         <input
           name="email"
           type="email"
           placeholder="tu@exemple.cat"
+          autocomplete="email"
           required
         >
-      </div>
+      </label>
 
-      <div class="form-group mt-2">
-        <label>Contrasenya</label>
+      <label>
+        Contrasenya
         <input
           name="password"
           type="password"
           minlength="6"
           placeholder="Mínim 6 caràcters"
+          autocomplete="new-password"
           required
         >
-      </div>
+      </label>
 
-      <div class="form-group mt-2">
-        <label>Soc...</label>
-
+      <label>
+        Soc...
         <select name="role">
           <option value="alumne">Alumne</option>
           <option value="professor">Professor</option>
         </select>
-      </div>
+      </label>
 
-      <button
-        class="btn btn-primary"
-        type="submit"
-        style="width:100%;margin-top:16px"
-      >
-        Crear compte →
+      <button class="btn primary wide" type="submit">
+        Crear compte
+        <span>→</span>
       </button>
 
     </form>
 
-    <p id="auth-message" class="text-small text-danger mt-2"></p>
+    <p id="auth-message" class="form-message"></p>
 
   </div>
 
 </div>
 
 
-<!-- =========================
+<!-- =====================================================
      APLICACIÓ
-========================= -->
+===================================================== -->
 
 <div id="app-view" class="app-shell hidden">
 
@@ -143,141 +142,75 @@
   <aside class="sidebar">
 
     <div class="brand">
-
-      <div class="brand-mark">✦</div>
-
+      <div class="brand-mark">M</div>
       <div>
-        <div class="brand-name">MiniClassroom</div>
-        <span class="brand-subtitle">
-          Agenda d'estudi amb IA
-        </span>
+        <div>MiniClassroom</div>
       </div>
-
     </div>
 
-
-    <div class="user-mini">
-
-      <div
-        class="avatar"
-        id="side-avatar"
-      >
-        M
-      </div>
-
+    <div class="side-user">
+      <div class="avatar" id="side-avatar">M</div>
       <div>
         <strong id="side-name">—</strong>
-        <span id="side-role">Alumne</span>
+        <small id="side-role">Alumne</small>
       </div>
-
     </div>
-
 
     <nav class="nav">
 
-      <div class="nav-section">
-        Organització
-      </div>
-
-      <button
-        class="nav-item active"
-        data-section="dashboard"
-      >
-        <span class="nav-icon">⌂</span>
+      <button class="nav-item active" data-section="dashboard" type="button">
+        <span>⌂</span>
         Tauler
       </button>
 
-      <button
-        class="nav-item"
-        data-section="tasks"
-      >
-        <span class="nav-icon">✓</span>
+      <button class="nav-item" data-section="tasks" type="button">
+        <span>✓</span>
         Tasques
       </button>
 
-      <button
-        class="nav-item"
-        data-section="exams"
-      >
-        <span class="nav-icon">▣</span>
+      <button class="nav-item" data-section="exams" type="button">
+        <span>▣</span>
         Exàmens
       </button>
 
-      <button
-        class="nav-item"
-        data-section="planner"
-      >
-        <span class="nav-icon">◫</span>
+      <button class="nav-item" data-section="planner" type="button">
+        <span>◫</span>
         Planificador
       </button>
 
-
-      <div class="nav-section">
-        Aprenentatge
-      </div>
-
-      <button
-        class="nav-item"
-        data-section="classes"
-      >
-        <span class="nav-icon">⌘</span>
+      <button class="nav-item" data-section="classes" type="button">
+        <span>⌘</span>
         Classes
       </button>
 
-      <button
-        class="nav-item"
-        data-section="ai"
-      >
-        <span class="nav-icon">✦</span>
+      <button class="nav-item" data-section="ai" type="button">
+        <span>✦</span>
         IA d'estudi
       </button>
 
-      <button
-        class="nav-item"
-        data-section="progress"
-      >
-        <span class="nav-icon">⌁</span>
+      <button class="nav-item" data-section="progress" type="button">
+        <span>⌁</span>
         Progrés
       </button>
 
-
-      <div class="nav-section">
-        Compte
-      </div>
-
-      <button
-        class="nav-item"
-        data-section="profile"
-      >
-        <span class="nav-icon">○</span>
+      <button class="nav-item" data-section="profile" type="button">
+        <span>○</span>
         Perfil
       </button>
 
     </nav>
 
+    <div class="side-bottom">
 
-    <div class="sidebar-bottom">
-
-      <div class="user-mini">
-
-        <div class="avatar">
-          ✦
-        </div>
-
+      <div class="ai-status">
+        <span class="status-dot"></span>
         <div>
-          <strong>IA preparada</strong>
-          <span id="ai-status-text">
-            Camí connectat
-          </span>
+          <b>IA preparada</b>
+          <small id="ai-status-text">Camí connectat</small>
         </div>
-
       </div>
 
-      <button
-        id="logout-btn"
-        class="btn btn-ghost"
-        style="width:100%;margin-top:8px"
-      >
+      <button id="logout-btn" class="logout" type="button">
         Tancar sessió
       </button>
 
@@ -290,65 +223,32 @@
 
   <main class="main">
 
-    <!-- TOPBAR -->
-
     <header class="topbar">
 
-      <div class="mobile-menu">
-        <button
-          class="btn btn-sm"
-          id="mobile-menu-btn"
-        >
-          ☰
-        </button>
+      <div class="mobile-brand brand">
+        <div class="brand-mark">M</div>
+        <div>MiniClassroom</div>
       </div>
 
-      <div class="page-title">
-
-        <small id="top-context">
-          TAULER
-        </small>
-
-        <h1 id="top-title">
-          Avui
-        </h1>
-
+      <div class="breadcrumb">
+        <span id="top-context">TAULER</span>
+        <span class="slash">/</span>
+        <strong id="top-title">Avui</strong>
       </div>
-
 
       <div class="top-actions">
 
-        <button
-          class="btn btn-sm"
-          id="quick-ai"
-        >
-          ✦ IA
+        <button class="icon-btn" id="quick-ai" type="button" title="Obrir IA">
+          ✦
         </button>
 
-        <button
-          class="btn btn-primary btn-sm"
-          id="quick-add"
-        >
+        <button class="btn ai-btn" id="quick-add" type="button">
           ＋ Afegir
         </button>
 
-        <button
-          class="btn btn-sm"
-          data-section="profile"
-        >
-
-          <span
-            class="avatar"
-            id="top-avatar"
-            style="width:28px;height:28px;display:inline-grid"
-          >
-            M
-          </span>
-
-          <span id="top-name">
-            —
-          </span>
-
+        <button class="profile-chip" data-section="profile" type="button">
+          <span class="avatar small" id="top-avatar">M</span>
+          <span id="top-name">—</span>
         </button>
 
       </div>
@@ -358,281 +258,133 @@
 
     <div class="content">
 
-
-      <!-- =========================
+      <!-- =================================================
            TAULER
-      ========================= -->
+      ================================================= -->
 
-      <section
-        id="section-dashboard"
-        class="section active"
-      >
+      <section id="section-dashboard" class="section active">
 
-        <div class="hero">
+        <div class="hero-row">
 
-          <div class="eyebrow">
-            AVUI
+          <div>
+            <p class="eyebrow">TAULER</p>
+            <h2 id="greeting">
+              El teu estudi,<br>
+              <span>al teu ritme.</span>
+            </h2>
+            <p class="muted">
+              Una visió clara del que tens pendent i del que ve després.
+            </p>
           </div>
 
-          <h2 id="greeting">
-            El teu estudi,<br>
-            clar i al teu ritme.
-          </h2>
-
-          <p>
-            Tot el que necessita la teva atenció,
-            sense soroll.
-          </p>
+          <button class="btn primary" data-section="tasks" type="button">
+            Veure les meves tasques →
+          </button>
 
         </div>
 
 
-        <!-- DEMÀ -->
+        <div class="card tomorrow">
 
-        <div class="card today-card">
-
-          <div class="today-date">
-            DEMÀ
+          <div class="tomorrow-date">
+            <span>DEMÀ</span>
+            <strong id="tomorrow-label">Demà</strong>
           </div>
 
-          <div
-            class="today-title"
-            id="tomorrow-label"
-          >
-            Demà
-          </div>
+          <div id="tomorrow-content" class="tomorrow-content">
 
-          <div class="today-subtitle">
-            Organitza't abans de començar.
-          </div>
+            <div class="calendar-icon">▣</div>
 
-          <div
-            id="tomorrow-content"
-            class="today-empty"
-          >
             <div>
-              <strong>
-                Demà està lliure.
-              </strong>
-
-              <div>
-                No tens cap activitat registrada.
-              </div>
+              <strong>Demà està lliure.</strong>
+              <small>No tens cap activitat registrada.</small>
             </div>
+
           </div>
 
         </div>
 
-
-        <!-- ESTADÍSTIQUES -->
 
         <div class="stats-grid">
 
-          <button
-            class="card stat-card"
-            data-section="tasks"
-          >
-
-            <div class="stat-icon">
-              ✓
-            </div>
-
-            <div class="stat-value"
-                 id="stat-pending">
-              0
-            </div>
-
-            <div class="stat-label">
-              Tasques pendents
-            </div>
-
-            <div
-              class="stat-label"
-              id="stat-completed"
-            >
-              0 completades
-            </div>
-
+          <button class="stat-card" data-section="tasks" type="button">
+            <span class="stat-icon">✓</span>
+            <span>
+              <small>Tasques pendents</small>
+              <strong id="stat-pending">0</strong>
+              <em id="stat-completed">0 completades</em>
+            </span>
           </button>
 
-
-          <button
-            class="card stat-card"
-            data-section="exams"
-          >
-
-            <div class="stat-icon">
-              ▣
-            </div>
-
-            <div
-              class="stat-value"
-              id="stat-exams"
-            >
-              0
-            </div>
-
-            <div class="stat-label">
-              Exàmens propers
-            </div>
-
-            <div class="stat-label">
-              Properes dates
-            </div>
-
+          <button class="stat-card" data-section="exams" type="button">
+            <span class="stat-icon">▣</span>
+            <span>
+              <small>Exàmens propers</small>
+              <strong id="stat-exams">0</strong>
+              <em>Properes dates</em>
+            </span>
           </button>
 
-
-          <button
-            class="card stat-card"
-            data-section="progress"
-          >
-
-            <div class="stat-icon">
-              ⌁
-            </div>
-
-            <div
-              class="stat-value"
-              id="stat-progress"
-            >
-              0%
-            </div>
-
-            <div class="stat-label">
-              Progrés
-            </div>
-
-            <div
-              class="stat-label"
-              id="stat-study"
-            >
-              0 / 0 min
-            </div>
-
+          <button class="stat-card" data-section="progress" type="button">
+            <span class="stat-icon">⌁</span>
+            <span>
+              <small>Progrés</small>
+              <strong id="stat-progress">0%</strong>
+              <em id="stat-study">0 / 0 min</em>
+            </span>
           </button>
 
-
-          <button
-            class="card stat-card"
-            data-section="tasks"
-          >
-
-            <div class="stat-icon">
-              ◷
-            </div>
-
-            <div
-              class="stat-value"
-              id="stat-urgent"
-            >
-              0
-            </div>
-
-            <div class="stat-label">
-              Tasques urgents
-            </div>
-
-            <div class="stat-label">
-              Pròxims 2 dies
-            </div>
-
+          <button class="stat-card urgent" data-section="tasks" type="button">
+            <span class="stat-icon">!</span>
+            <span>
+              <small>Tasques urgents</small>
+              <strong id="stat-urgent">0</strong>
+              <em>Pròxims 2 dies</em>
+            </span>
           </button>
 
         </div>
 
 
-        <!-- TASQUES + EXÀMENS -->
+        <div class="dashboard-grid">
 
-        <div class="grid-2">
+          <div class="card list-card">
 
-          <div class="card">
-
-            <div class="card-header">
-
+            <div class="card-head">
               <div>
-                <div class="eyebrow">
-                  ATENCIÓ
-                </div>
-
-                <h3>
-                  Què toca ara?
-                </h3>
+                <p class="eyebrow">ATENCIÓ</p>
+                <h3>Què toca ara?</h3>
               </div>
-
-              <button
-                class="btn btn-sm"
-                data-section="tasks"
-              >
+              <button class="link-btn" data-section="tasks" type="button">
                 Veure tasques →
               </button>
-
             </div>
 
-            <div
-              id="dashboard-tasks"
-              class="empty"
-            >
-
-              <div class="empty-icon">
-                ✓
-              </div>
-
-              <strong>
-                No tens tasques pendents.
-              </strong>
-
-              <span>
-                Quan n'afegeixis,
-                t'ajudarem a ordenar-les.
-              </span>
-
+            <div id="dashboard-tasks" class="empty-state">
+              <span>✓</span>
+              <b>No tens tasques pendents.</b>
+              <small>Quan n'afegeixis, apareixeran aquí.</small>
             </div>
 
           </div>
 
 
-          <div class="card">
+          <div class="card list-card">
 
-            <div class="card-header">
-
+            <div class="card-head">
               <div>
-                <div class="eyebrow">
-                  EXÀMENS
-                </div>
-
-                <h3>
-                  Properes dates
-                </h3>
+                <p class="eyebrow">EXÀMENS</p>
+                <h3>Properes dates</h3>
               </div>
-
-              <button
-                class="btn btn-sm"
-                data-section="exams"
-              >
+              <button class="link-btn" data-section="exams" type="button">
                 Veure exàmens →
               </button>
-
             </div>
 
-            <div
-              id="dashboard-exams"
-              class="empty"
-            >
-
-              <div class="empty-icon">
-                ▣
-              </div>
-
-              <strong>
-                No hi ha exàmens.
-              </strong>
-
-              <span>
-                Afegeix-ne un per començar
-                a preparar-lo.
-              </span>
-
+            <div id="dashboard-exams" class="empty-state">
+              <span>▣</span>
+              <b>No hi ha exàmens.</b>
+              <small>Afegeix-ne un per començar a preparar-lo.</small>
             </div>
 
           </div>
@@ -640,585 +392,301 @@
         </div>
 
 
-        <!-- IA -->
+        <div class="dashboard-bottom">
 
-        <div
-          class="card ai-card"
-          style="margin-top:14px"
-        >
+          <div class="card ai-reco">
 
-          <div class="card-header">
-
-            <div class="ai-header">
-
-              <div class="ai-icon">
-                ✦
-              </div>
-
+            <div class="card-head">
               <div>
-
-                <div class="eyebrow">
-                  MINICLASSROOM IA
-                </div>
-
-                <h3>
-                  El teu següent pas
-                </h3>
-
+                <p class="eyebrow">MINICLASSROOM IA</p>
+                <h3>El teu següent pas</h3>
               </div>
 
+              <button class="btn secondary" id="recalc-ai" type="button">
+                ✦ Recalcular
+              </button>
             </div>
 
-            <button
-              class="btn btn-primary btn-sm"
-              id="recalc-ai"
-            >
-              ✦ Recalcular amb IA
-            </button>
+            <div id="recommendation-box" class="reco-body">
+              <span class="reco-orb">✦</span>
+              <div>
+                <strong>Encara estic ordenant el teu estudi.</strong>
+                <small>
+                  Quan tinguis tasques o exàmens, la IA podrà proposar-te
+                  què fer primer.
+                </small>
+              </div>
+            </div>
 
           </div>
 
 
-          <div
-            id="recommendation-box"
-            class="card-body"
-          >
+          <div class="card focus-card">
 
-            <strong>
-              Encara estic ordenant el teu estudi.
-            </strong>
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">ACCÉS RÀPID</p>
+                <h3>Què vols fer?</h3>
+              </div>
+            </div>
 
-            <p class="text-muted">
-              Quan tinguis tasques o exàmens,
-              la IA podrà proposar-te què fer primer.
-            </p>
+            <div class="focus-actions">
+              <button data-section="tasks" type="button">
+                ✓ Organitzar tasques
+              </button>
+              <button data-section="ai" type="button">
+                ✦ Estudiar amb IA
+              </button>
+              <button data-section="planner" type="button">
+                ◫ Planificar la setmana
+              </button>
+            </div>
 
           </div>
-
-        </div>
-
-
-        <!-- ACCIONS -->
-
-        <div
-          class="grid-3"
-          style="margin-top:14px"
-        >
-
-          <button
-            class="card"
-            data-section="tasks"
-            style="padding:20px;text-align:left"
-          >
-
-            <div class="eyebrow">
-              ORGANITZACIÓ
-            </div>
-
-            <h3>
-              ✓ Organitzar tasques
-            </h3>
-
-            <p class="text-muted">
-              Ordena el que tens pendent.
-            </p>
-
-          </button>
-
-
-          <button
-            class="card"
-            data-section="ai"
-            style="padding:20px;text-align:left"
-          >
-
-            <div class="eyebrow">
-              APRENENTATGE
-            </div>
-
-            <h3>
-              ✦ Estudiar amb IA
-            </h3>
-
-            <p class="text-muted">
-              Entén, practica i pregunta.
-            </p>
-
-          </button>
-
-
-          <button
-            class="card"
-            data-section="planner"
-            style="padding:20px;text-align:left"
-          >
-
-            <div class="eyebrow">
-              PLANIFICACIÓ
-            </div>
-
-            <h3>
-              ◫ Planificar la setmana
-            </h3>
-
-            <p class="text-muted">
-              Distribueix millor el teu temps.
-            </p>
-
-          </button>
 
         </div>
 
       </section>
 
 
-      <!-- =========================
+      <!-- =================================================
            TASQUES
-      ========================= -->
+      ================================================= -->
 
-      <section
-        id="section-tasks"
-        class="section"
-      >
+      <section id="section-tasks" class="section">
 
-        <div class="hero">
+        <div class="section-title">
 
-          <div class="eyebrow">
-            ORGANITZACIÓ
+          <div>
+            <p class="eyebrow">ORGANITZACIÓ</p>
+            <h2>Tasques</h2>
+            <p class="muted">
+              Converteix la feina pendent en passos concrets.
+            </p>
           </div>
 
-          <h2>
-            Tasques
-          </h2>
-
-          <p>
-            Converteix la feina pendent
-            en passos concrets.
-          </p>
+          <button class="btn primary" id="new-task" type="button">
+            ＋ Nova tasca
+          </button>
 
         </div>
 
 
-        <div class="card">
+        <div class="toolbar">
 
-          <div class="card-header">
-
-            <div>
-              <h3>
-                La teva feina
-              </h3>
-            </div>
-
-            <button
-              class="btn btn-primary"
-              id="new-task"
-            >
-              ＋ Nova tasca
-            </button>
-
+          <div class="segmented" id="task-filter">
+            <button class="active" data-filter="totes" type="button">Totes</button>
+            <button data-filter="pendent" type="button">Pendents</button>
+            <button data-filter="en procés" type="button">En procés</button>
+            <button data-filter="completada" type="button">Completades</button>
           </div>
 
-
-          <div class="card-body">
-
-            <div
-              class="flex justify-between gap-2"
-              style="flex-wrap:wrap"
-            >
-
-              <div
-                class="flex gap-1"
-                id="task-filter"
-              >
-
-                <button
-                  class="btn btn-sm active"
-                  data-filter="totes"
-                >
-                  Totes
-                </button>
-
-                <button
-                  class="btn btn-sm"
-                  data-filter="pendent"
-                >
-                  Pendents
-                </button>
-
-                <button
-                  class="btn btn-sm"
-                  data-filter="en procés"
-                >
-                  En procés
-                </button>
-
-                <button
-                  class="btn btn-sm"
-                  data-filter="completada"
-                >
-                  Completades
-                </button>
-
-              </div>
-
-
-              <input
-                id="task-search"
-                placeholder="Cerca una tasca..."
-                style="max-width:250px"
-              >
-
-            </div>
-
-
-            <div
-              id="tasks-list"
-              class="task-list"
-              style="margin-top:12px"
-            ></div>
-
-          </div>
+          <input
+            id="task-search"
+            class="search"
+            type="search"
+            placeholder="Cerca una tasca..."
+          >
 
         </div>
+
+
+        <div id="tasks-list" class="task-list"></div>
 
       </section>
 
 
-      <!-- =========================
+      <!-- =================================================
            EXÀMENS
-      ========================= -->
+      ================================================= -->
 
-      <section
-        id="section-exams"
-        class="section"
-      >
+      <section id="section-exams" class="section">
 
-        <div class="hero">
+        <div class="section-title">
 
-          <div class="eyebrow">
-            PREPARACIÓ
+          <div>
+            <p class="eyebrow">PREPARACIÓ</p>
+            <h2>Exàmens</h2>
+            <p class="muted">
+              Fes visible el que s'acosta abans que es converteixi en urgència.
+            </p>
           </div>
 
-          <h2>
-            Exàmens
-          </h2>
-
-          <p>
-            Fes visible el que s'acosta
-            abans que es converteixi en urgència.
-          </p>
-
-        </div>
-
-
-        <div
-          class="flex justify-between items-center"
-          style="margin-bottom:14px"
-        >
-
-          <div class="text-muted">
-            Organitza els teus pròxims reptes.
-          </div>
-
-          <button
-            class="btn btn-primary"
-            id="new-exam"
-          >
+          <button class="btn primary" id="new-exam" type="button">
             ＋ Nou examen
           </button>
 
         </div>
 
+        <div class="toolbar">
+          <span class="muted">Organitza els teus pròxims reptes.</span>
+        </div>
 
-        <div
-          id="exams-list"
-          class="grid-3"
-        ></div>
+        <div id="exams-list" class="exam-grid"></div>
 
       </section>
 
 
-      <!-- =========================
+      <!-- =================================================
            PLANIFICADOR
-      ========================= -->
+      ================================================= -->
 
-      <section
-        id="section-planner"
-        class="section"
-      >
+      <section id="section-planner" class="section">
 
-        <div class="hero">
+        <div class="section-title">
 
-          <div class="eyebrow">
-            RITME
+          <div>
+            <p class="eyebrow">RITME</p>
+            <h2>Planificador</h2>
+            <p class="muted">
+              Una setmana realista és millor que una setmana perfecta.
+            </p>
           </div>
 
-          <h2>
-            Planificador
-          </h2>
-
-          <p>
-            Una setmana realista és millor
-            que una setmana perfecta.
-          </p>
+          <button class="btn primary" id="generate-plan" type="button">
+            ✦ Generar pla amb IA
+          </button>
 
         </div>
 
 
-        <div class="grid-main">
+        <div class="planner-layout">
 
-          <div class="card">
+          <div class="card calendar-card">
 
-            <div class="card-header">
-
-              <div>
-
-                <div class="eyebrow">
-                  SETMANA
-                </div>
-
-                <h3 id="week-title">
-                  Aquesta setmana
-                </h3>
-
-              </div>
-
-              <div class="flex gap-1">
-
-                <button
-                  class="btn btn-sm"
-                  id="prev-week"
-                >
-                  ←
-                </button>
-
-                <button
-                  class="btn btn-sm"
-                  id="next-week"
-                >
-                  →
-                </button>
-
-              </div>
-
+            <div class="planner-head">
+              <button id="prev-week" type="button" aria-label="Setmana anterior">←</button>
+              <h3 id="week-title">Aquesta setmana</h3>
+              <button id="next-week" type="button" aria-label="Setmana següent">→</button>
             </div>
 
-            <div
-              id="week-grid"
-              class="card-body"
-            ></div>
+            <div id="week-grid" class="week-grid"></div>
 
           </div>
 
 
-          <div class="card">
+          <aside class="card plan-side">
 
-            <div class="card-header">
+            <p class="eyebrow">IA</p>
+            <h3>Sessions recomanades</h3>
 
-              <div>
+            <div id="plan-sessions" class="plan-sessions"></div>
 
-                <div class="eyebrow">
-                  IA
-                </div>
+            <button class="btn secondary wide" id="add-session" type="button">
+              ＋ Afegir sessió
+            </button>
 
-                <h3>
-                  Sessions recomanades
-                </h3>
-
-              </div>
-
-            </div>
-
-            <div
-              id="plan-sessions"
-              class="card-body"
-            ></div>
-
-            <div style="padding:0 20px 20px">
-
-              <button
-                class="btn btn-primary"
-                id="generate-plan"
-                style="width:100%"
-              >
-                ✦ Generar pla amb IA
-              </button>
-
-            </div>
-
-          </div>
+          </aside>
 
         </div>
 
       </section>
 
 
-      <!-- =========================
+      <!-- =================================================
            CLASSES
-      ========================= -->
+      ================================================= -->
 
-      <section
-        id="section-classes"
-        class="section"
-      >
+      <section id="section-classes" class="section">
 
-        <div class="hero">
+        <div class="section-title">
 
-          <div class="eyebrow">
-            AULA
+          <div>
+            <p class="eyebrow">AULA</p>
+            <h2>Classes</h2>
+            <p class="muted">
+              El teu espai per compartir feina, avisos i dates.
+            </p>
           </div>
-
-          <h2>
-            Classes
-          </h2>
-
-          <p>
-            El teu espai per compartir feina,
-            avisos i dates.
-          </p>
 
         </div>
 
+        <div id="class-actions" class="toolbar"></div>
 
-        <div
-          id="class-actions"
-          style="margin-bottom:14px"
-        ></div>
+        <div id="classes-list" class="class-grid"></div>
 
-
-        <div
-          id="classes-list"
-          class="class-grid"
-        ></div>
-
-
-        <div
-          id="class-detail"
-          class="hidden"
-          style="margin-top:15px"
-        ></div>
+        <div id="class-detail" class="class-detail hidden"></div>
 
       </section>
 
 
-      <!-- =========================
+      <!-- =================================================
            IA
-      ========================= -->
+      ================================================= -->
 
-      <section
-        id="section-ai"
-        class="section"
-      >
+      <section id="section-ai" class="section">
 
-        <div class="hero">
+        <div class="section-title">
 
-          <div class="eyebrow">
-            ASSISTENT D'ESTUDI
+          <div>
+            <p class="eyebrow">ASSISTENT D'ESTUDI</p>
+            <h2>IA d'estudi</h2>
+            <p class="muted">
+              Pregunta, explica, practica i planifica. Tu continues portant el control.
+            </p>
           </div>
 
-          <h2>
-            IA d'estudi
-          </h2>
-
-          <p>
-            Pregunta, explica, practica i planifica.
-            Tu continues portant el control.
-          </p>
+          <span class="pill purple">Català · estudi</span>
 
         </div>
 
 
-        <div class="grid-main">
+        <div class="ai-layout">
 
-          <div class="card chat">
+          <div class="card ai-chat-card">
 
-            <div class="card-header">
-
+            <div class="card-head">
               <div class="ai-header">
-
-                <div class="ai-icon">
-                  ✦
-                </div>
-
+                <span class="reco-orb">✦</span>
                 <div>
-
-                  <h3>
-                    MiniClassroom IA
-                  </h3>
-
-                  <p>
-                    Assistent d'estudi
-                  </p>
-
+                  <h3>MiniClassroom IA</h3>
+                  <small class="muted">Assistent d'estudi</small>
                 </div>
-
               </div>
-
             </div>
 
 
-            <div
-              class="ai-modes"
-              id="ai-modes"
-              style="padding:0 20px"
-            >
+            <div id="ai-modes" class="mode-tabs">
 
-              <button
-                class="ai-mode active"
-                data-mode="DUBTE"
-              >
+              <button class="active" data-mode="DUBTE" type="button">
                 Dubte
               </button>
 
-              <button
-                class="ai-mode"
-                data-mode="EXPLICAR"
-              >
+              <button data-mode="EXPLICAR" type="button">
                 Explicar
               </button>
 
-              <button
-                class="ai-mode"
-                data-mode="ESTUDIAR"
-              >
+              <button data-mode="ESTUDIAR" type="button">
                 Estudiar
               </button>
 
-              <button
-                class="ai-mode"
-                data-mode="RESUMIR"
-              >
+              <button data-mode="RESUMIR" type="button">
                 Resumir
+              </button>
+
+              <button data-mode="TEST" type="button">
+                Test
               </button>
 
             </div>
 
 
-            <div
-              id="chat-log"
-              class="chat-messages"
-            >
+            <div id="chat-log" class="chat-log">
 
-              <div class="chat-message ai">
-
-                <strong>
-                  MiniClassroom IA
-                </strong>
-
-                <p>
-                  Hola! Què vols entendre
-                  o organitzar avui?
-                </p>
-
+              <div class="chat-bubble ai">
+                <span class="bubble-icon">✦</span>
+                <div>
+                  <b>MiniClassroom IA</b>
+                  <p>
+                    Hola! Què vols entendre o organitzar avui?
+                  </p>
+                </div>
               </div>
 
             </div>
 
 
-            <form
-              id="ai-form"
-              class="chat-input"
-            >
+            <form id="ai-form" class="chat-form">
 
               <textarea
                 id="ai-input"
@@ -1226,10 +694,7 @@
                 placeholder="Escriu una pregunta..."
               ></textarea>
 
-              <button
-                class="btn btn-primary"
-                type="submit"
-              >
+              <button class="send-btn" type="submit" aria-label="Enviar">
                 ↑
               </button>
 
@@ -1238,69 +703,33 @@
           </div>
 
 
-          <div>
+          <div class="ai-tools">
 
-            <div class="card">
-
-              <div class="card-header">
-
-                <div>
-
-                  <div class="eyebrow">
-                    PRÀCTICA
-                  </div>
-
-                  <h3>
-                    Eines d'estudi
-                  </h3>
-
-                </div>
-
+            <button class="tool-card" id="open-test" type="button">
+              <span>✓</span>
+              <div>
+                <b>Crear un test</b>
+                <small>Practica amb 5 preguntes.</small>
               </div>
+              <i>→</i>
+            </button>
 
-
-              <div class="card-body">
-
-                <button
-                  class="btn"
-                  id="open-test"
-                  style="width:100%;justify-content:flex-start;margin-bottom:8px"
-                >
-                  ✎ &nbsp; Crear un test
-                </button>
-
-                <button
-                  class="btn"
-                  id="open-reco"
-                  style="width:100%;justify-content:flex-start"
-                >
-                  ⌁ &nbsp; Prioritza la meva feina
-                </button>
-
+            <button class="tool-card" id="open-reco" type="button">
+              <span>⌁</span>
+              <div>
+                <b>Prioritza la meva feina</b>
+                <small>Analitza tasques i exàmens.</small>
               </div>
+              <i>→</i>
+            </button>
 
-            </div>
-
-
-            <div
-              class="card"
-              style="margin-top:14px;padding:20px"
-            >
-
-              <div class="eyebrow">
-                APRENENTATGE
-              </div>
-
-              <h3>
-                Aprèn, no només responguis.
-              </h3>
-
-              <p class="text-muted">
-                Demana pistes, exemples,
-                explicacions pas a pas
+            <div class="card ai-note">
+              <p class="eyebrow">APRENENTATGE</p>
+              <b>Aprèn, no només responguis.</b>
+              <small>
+                Demana pistes, exemples, explicacions pas a pas
                 i preguntes de comprovació.
-              </p>
-
+              </small>
             </div>
 
           </div>
@@ -1310,248 +739,144 @@
       </section>
 
 
-      <!-- =========================
+      <!-- =================================================
            PROGRÉS
-      ========================= -->
+      ================================================= -->
 
-      <section
-        id="section-progress"
-        class="section"
-      >
+      <section id="section-progress" class="section">
 
-        <div class="hero">
+        <div class="section-title">
 
-          <div class="eyebrow">
-            EVOLUCIÓ
+          <div>
+            <p class="eyebrow">EVOLUCIÓ</p>
+            <h2>Progrés</h2>
+            <p class="muted">
+              Mira el teu procés, no només el resultat.
+            </p>
           </div>
-
-          <h2>
-            Progrés
-          </h2>
-
-          <p>
-            Mira el teu procés,
-            no només el resultat.
-          </p>
 
         </div>
 
 
-        <div class="grid-2">
+        <div class="progress-grid">
 
-          <div class="card card-body">
+          <div class="card progress-big">
 
-            <div class="eyebrow">
-              TASQUES COMPLETADES
-            </div>
+            <p class="eyebrow">TASQUES COMPLETADES</p>
 
-            <div
-              class="stat-value"
-              id="progress-number"
-              style="font-size:36px;margin:10px 0"
-            >
-              0%
-            </div>
+            <div class="progress-number" id="progress-number">0%</div>
 
             <div class="progress-track">
-              <div
-                id="progress-bar"
-                style="width:0%"
-              ></div>
+              <span id="progress-bar"></span>
             </div>
 
-            <p
-              id="progress-caption"
-              class="text-muted text-small"
-            >
-              0 de 0 tasques
-            </p>
+            <small id="progress-caption">0 de 0 tasques</small>
 
           </div>
 
 
-          <div class="card card-body">
+          <div class="card progress-big">
 
-            <div class="eyebrow">
-              TEMPS D'ESTUDI
-            </div>
+            <p class="eyebrow">TEMPS D'ESTUDI</p>
 
-            <div
-              class="stat-value"
-              id="study-number"
-              style="font-size:36px;margin:10px 0"
-            >
-              0 min
-            </div>
+            <div class="progress-number" id="study-number">0 min</div>
 
             <div class="progress-track">
-              <div
-                id="study-bar"
-                style="width:0%"
-              ></div>
+              <span id="study-bar"></span>
             </div>
 
-            <p
-              id="study-caption"
-              class="text-muted text-small"
-            >
-              0 min completats
-            </p>
+            <small id="study-caption">0 min completats</small>
 
           </div>
 
         </div>
 
 
-        <div
-          class="card"
-          style="margin-top:14px"
-        >
+        <div class="card chart-card">
 
-          <div class="card-header">
-
+          <div class="card-head">
             <div>
-
-              <div class="eyebrow">
-                AQUESTA SETMANA
-              </div>
-
-              <h3>
-                Temps d'estudi
-              </h3>
-
+              <p class="eyebrow">AQUESTA SETMANA</p>
+              <h3>Temps d'estudi</h3>
             </div>
-
           </div>
 
-          <div
-            id="progress-chart"
-            class="card-body"
-            style="min-height:220px"
-          ></div>
+          <div id="progress-chart" class="bar-chart"></div>
 
         </div>
 
 
-        <div
-          class="card"
-          style="margin-top:14px"
-        >
+        <div class="card" style="margin-top:18px">
 
-          <div class="card-header">
-
+          <div class="card-head">
             <div>
-
-              <div class="eyebrow">
-                PRÀCTICA
-              </div>
-
-              <h3>
-                Últims tests
-              </h3>
-
+              <p class="eyebrow">PRÀCTICA</p>
+              <h3>Últims tests</h3>
             </div>
-
           </div>
 
-          <div
-            id="test-history"
-            class="card-body"
-          ></div>
+          <div id="test-history" class="empty-state">
+            <span>✓</span>
+            <b>Encara no hi ha tests.</b>
+            <small>Quan en facis un, el resultat apareixerà aquí.</small>
+          </div>
 
         </div>
 
       </section>
 
 
-      <!-- =========================
+      <!-- =================================================
            PERFIL
-      ========================= -->
+      ================================================= -->
 
-      <section
-        id="section-profile"
-        class="section"
-      >
+      <section id="section-profile" class="section">
 
-        <div class="hero">
+        <div class="section-title">
 
-          <div class="eyebrow">
-            COMPTE
-          </div>
-
-          <h2>
-            Perfil
-          </h2>
-
-          <p>
-            Les teves dades bàsiques
-            de MiniClassroom.
-          </p>
-
-        </div>
-
-
-        <div class="card card-body">
-
-          <div class="flex items-center gap-3">
-
-            <div
-              class="avatar"
-              id="profile-avatar"
-              style="width:65px;height:65px;font-size:22px"
-            >
-              M
-            </div>
-
-            <div>
-
-              <h3
-                id="profile-name"
-                style="margin:0"
-              >
-                —
-              </h3>
-
-              <p
-                id="profile-email"
-                class="text-muted"
-              >
-                —
-              </p>
-
-              <span
-                class="badge badge-purple"
-                id="profile-role"
-              >
-                Alumne
-              </span>
-
-            </div>
-
+          <div>
+            <p class="eyebrow">COMPTE</p>
+            <h2>Perfil</h2>
+            <p class="muted">
+              Les teves dades bàsiques de MiniClassroom.
+            </p>
           </div>
 
         </div>
 
 
-        <div
-          class="card"
-          style="margin-top:14px;padding:20px"
-        >
+        <div class="card profile-card">
 
-          <div class="eyebrow">
-            TD R · EXPERIMENT
-          </div>
+          <div class="profile-avatar" id="profile-avatar">M</div>
 
-          <h3>
-            Seguiment de l'aprenentatge
-          </h3>
+          <h2 id="profile-name">—</h2>
 
-          <p class="text-muted">
-            MiniClassroom registra esdeveniments
-            acadèmics no invasius, com tasques
-            completades, ús de la IA i resultats
-            dels tests, per poder analitzar
-            l'experiment del TdR.
+          <p id="profile-email" class="muted">—</p>
+
+          <dl>
+            <dt>Rol</dt>
+            <dd id="profile-role">Alumne</dd>
+
+            <dt>Plataforma</dt>
+            <dd>MiniClassroom</dd>
+
+            <dt>IA d'estudi</dt>
+            <dd>Disponible</dd>
+          </dl>
+
+        </div>
+
+
+        <div class="card" style="max-width:700px;margin-top:18px;padding:22px">
+
+          <p class="eyebrow">TdR · EXPERIMENT</p>
+
+          <h3>Seguiment de l'aprenentatge</h3>
+
+          <p class="muted">
+            MiniClassroom registra esdeveniments acadèmics no invasius,
+            com tasques completades, ús de la IA i resultats dels tests,
+            per poder analitzar l'experiment del TdR.
           </p>
 
         </div>
