@@ -1,0 +1,1608 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MiniClassroom · La teva classe digital</title>
+  <meta name="theme-color" content="#07101c">
+  <meta name="description" content="MiniClassroom · aula digital de l'Institut Can Peixauet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<div id="toast-root"></div>
+
+<!-- =====================================================
+     LOGIN
+===================================================== -->
+
+<div id="auth-view" class="auth-shell">
+
+  <div class="auth-card">
+
+    <div class="auth-brand">
+      <img
+        src="/static/logo-canpeixauet.png"
+        alt="Institut Can Peixauet"
+        onerror="this.style.display='none'"
+      >
+
+      <div>
+        <strong>MiniClassroom</strong>
+        <span>Institut Can Peixauet</span>
+      </div>
+    </div>
+
+    <div class="auth-kicker">
+      AULA DIGITAL
+    </div>
+
+    <h1>
+      La teva classe digital<br>
+      <span>a tot arreu.</span>
+    </h1>
+
+    <p class="auth-copy">
+      Classes, tasques, exàmens i intel·ligència artificial
+      en un únic espai d'estudi.
+    </p>
+
+    <div class="auth-tabs">
+
+      <button
+        class="auth-tab active"
+        data-auth="login"
+        type="button"
+      >
+        Iniciar sessió
+      </button>
+
+      <button
+        class="auth-tab"
+        data-auth="register"
+        type="button"
+      >
+        Crear compte
+      </button>
+
+    </div>
+
+    <form id="login-form" class="auth-form">
+
+      <label>
+        Correu electrònic
+
+        <input
+          name="email"
+          type="email"
+          placeholder="tu@exemple.cat"
+          required
+        >
+      </label>
+
+      <label>
+        Contrasenya
+
+        <input
+          name="password"
+          type="password"
+          placeholder="••••••••"
+          required
+        >
+      </label>
+
+      <button
+        class="btn btn-blue wide"
+        type="submit"
+      >
+        Entrar
+        <span>→</span>
+      </button>
+
+    </form>
+
+
+    <form
+      id="register-form"
+      class="auth-form hidden"
+    >
+
+      <label>
+        Nom
+
+        <input
+          name="username"
+          placeholder="El teu nom"
+          required
+        >
+      </label>
+
+      <label>
+        Correu electrònic
+
+        <input
+          name="email"
+          type="email"
+          placeholder="tu@exemple.cat"
+          required
+        >
+      </label>
+
+      <label>
+        Contrasenya
+
+        <input
+          name="password"
+          type="password"
+          minlength="6"
+          placeholder="Mínim 6 caràcters"
+          required
+        >
+      </label>
+
+      <label>
+        Soc...
+
+        <select name="role">
+          <option value="alumne">
+            Alumne
+          </option>
+
+          <option value="professor">
+            Professor
+          </option>
+        </select>
+
+      </label>
+
+      <button
+        class="btn btn-yellow wide"
+        type="submit"
+      >
+        Crear compte
+        <span>→</span>
+      </button>
+
+    </form>
+
+    <p
+      id="auth-message"
+      class="error-text"
+    ></p>
+
+  </div>
+
+</div>
+
+
+<!-- =====================================================
+     APLICACIÓ
+===================================================== -->
+
+<div
+  id="app-view"
+  class="app-shell hidden"
+>
+
+
+  <!-- SIDEBAR -->
+
+  <aside class="sidebar">
+
+    <div class="brand">
+
+      <img
+        src="/static/logo-canpeixauet.png"
+        alt="Institut Can Peixauet"
+        onerror="this.style.display='none'"
+      >
+
+      <div>
+        <strong>MiniClassroom</strong>
+        <small>Institut Can Peixauet</small>
+      </div>
+
+    </div>
+
+
+    <div class="user-mini">
+
+      <span
+        class="avatar"
+        id="side-avatar"
+      >
+        F
+      </span>
+
+      <div>
+
+        <strong id="side-name">
+          —
+        </strong>
+
+        <small id="side-role">
+          Alumne
+        </small>
+
+      </div>
+
+    </div>
+
+
+    <nav class="nav">
+
+      <button type="button"
+        class="nav-item active"
+        data-section="dashboard"
+      >
+        <span>⌂</span>
+        Inici
+      </button>
+
+      <button type="button"
+        class="nav-item"
+        data-section="calendar"
+      >
+        <span>□</span>
+        Calendari
+      </button>
+
+      <button type="button"
+        class="nav-item"
+        data-section="tasks"
+      >
+        <span>✓</span>
+        Tasques
+      </button>
+
+      <button type="button"
+        class="nav-item"
+        data-section="exams"
+      >
+        <span>▣</span>
+        Exàmens
+      </button>
+
+      <button type="button"
+        class="nav-item"
+        data-section="planner"
+      >
+        <span>◫</span>
+        Planificador
+      </button>
+
+      <button type="button"
+        class="nav-item"
+        data-section="classes"
+      >
+        <span>⌘</span>
+        Classes
+      </button>
+
+      <button type="button"
+        class="nav-item"
+        data-section="ai"
+      >
+        <span>✦</span>
+        IA d'estudi
+      </button>
+
+      <button type="button"
+        class="nav-item"
+        data-section="progress"
+      >
+        <span>▥</span>
+        Progrés
+      </button>
+
+      <button type="button"
+        class="nav-item"
+        data-section="profile"
+      >
+        <span>○</span>
+        Perfil
+      </button>
+
+    </nav>
+
+
+    <div class="sidebar-bottom">
+
+      <div class="ai-status">
+
+        <i></i>
+
+        <div>
+          <b>IA preparada</b>
+          <small>Disponible per ajudar-te</small>
+        </div>
+
+        <span>→</span>
+
+      </div>
+
+
+      <button type="button"
+        id="logout-btn"
+        class="logout"
+      >
+        ↪ Tancar sessió
+      </button>
+
+    </div>
+
+  </aside>
+
+
+  <!-- CONTINGUT -->
+
+  <main class="main">
+
+    <header class="topbar">
+
+      <button type="button"
+        class="mobile-menu"
+        id="mobile-menu"
+      >
+        ☰
+      </button>
+
+
+      <div class="search-box">
+
+        <span>⌕</span>
+
+        <input
+          id="global-search"
+          type="search"
+          placeholder="Cerca tasques, exàmens, classes..."
+        >
+
+        <kbd>⌘ K</kbd>
+
+      </div>
+
+
+      <div class="top-actions">
+
+        <button type="button"
+          class="icon-button"
+          id="quick-ai"
+          title="IA"
+        >
+          ✦
+        </button>
+
+        <button type="button"
+          class="icon-button notification-button"
+          id="notifications"
+          title="Notificacions"
+        >
+          ♧
+          <i id="notification-dot"></i>
+        </button>
+
+        <button type="button"
+          class="btn btn-yellow add-button"
+          id="quick-add"
+        >
+          ＋ Afegir
+        </button>
+
+
+        <button type="button"
+          class="profile-chip"
+          data-section="profile"
+        >
+
+          <span
+            class="avatar small"
+            id="top-avatar"
+          >
+            F
+          </span>
+
+          <span>
+
+            <b id="top-name">
+              —
+            </b>
+
+            <small id="top-role">
+              Alumne
+            </small>
+
+          </span>
+
+          <em>⌄</em>
+
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <div
+      id="notification-panel"
+      class="floating-panel hidden"
+    ></div>
+
+
+    <div class="content">
+
+
+      <!-- =================================================
+           INICI
+      ================================================= -->
+
+      <section
+        id="section-dashboard"
+        class="section active"
+      >
+
+        <div class="dashboard-layout">
+
+          <div class="dashboard-main">
+
+
+            <!-- HERO -->
+
+            <div class="hero-banner">
+
+              <div class="hero-image"></div>
+
+              <div class="hero-overlay"></div>
+
+              <div class="hero-copy">
+
+                <div class="eyebrow light">
+                  INSTITUT CAN PEIXAUET
+                </div>
+
+                <h1>
+                  La teva classe digital<br>
+                  <span>a tot arreu.</span>
+                </h1>
+
+                <p>
+                  Organitza, aprèn i avança
+                  amb l'ajuda de la intel·ligència artificial.
+                </p>
+
+                <div class="hero-actions">
+
+                  <button type="button"
+                    class="btn btn-yellow"
+                    data-section="tasks"
+                  >
+                    → Veure les meves tasques
+                  </button>
+
+                  <button type="button"
+                    class="btn btn-outline"
+                    data-section="ai"
+                  >
+                    Obrir la IA
+                  </button>
+
+                </div>
+
+              </div>
+
+
+              <div class="hero-dots">
+                <b></b>
+                <b></b>
+                <b></b>
+              </div>
+
+            </div>
+
+
+            <!-- ESTADÍSTIQUES -->
+
+            <div class="stats-grid">
+
+              <button type="button"
+                class="stat-card blue"
+                data-section="tasks"
+              >
+
+                <span class="stat-icon">
+                  ✓
+                </span>
+
+                <div>
+
+                  <small>
+                    Tasques pendents
+                  </small>
+
+                  <strong id="stat-pending">
+                    0
+                  </strong>
+
+                  <em id="stat-completed">
+                    0 completades
+                  </em>
+
+                </div>
+
+                <b>›</b>
+
+              </button>
+
+
+              <button type="button"
+                class="stat-card red"
+                data-section="exams"
+              >
+
+                <span class="stat-icon">
+                  ▣
+                </span>
+
+                <div>
+
+                  <small>
+                    Exàmens propers
+                  </small>
+
+                  <strong id="stat-exams">
+                    0
+                  </strong>
+
+                  <em>
+                    Properes dates
+                  </em>
+
+                </div>
+
+                <b>›</b>
+
+              </button>
+
+
+              <button type="button"
+                class="stat-card yellow"
+                data-section="progress"
+              >
+
+                <span class="stat-icon">
+                  ▥
+                </span>
+
+                <div>
+
+                  <small>
+                    Progrés setmanal
+                  </small>
+
+                  <strong id="stat-progress">
+                    0%
+                  </strong>
+
+                  <em id="stat-study">
+                    0 / 0 min
+                  </em>
+
+                </div>
+
+                <b>›</b>
+
+              </button>
+
+
+              <button type="button"
+                class="stat-card neutral"
+                data-section="tasks"
+              >
+
+                <span class="stat-icon">
+                  ♧
+                </span>
+
+                <div>
+
+                  <small>
+                    Tasques urgents
+                  </small>
+
+                  <strong id="stat-urgent">
+                    0
+                  </strong>
+
+                  <em>
+                    Pròxims 2 dies
+                  </em>
+
+                </div>
+
+                <b>›</b>
+
+              </button>
+
+            </div>
+
+
+            <!-- CLASSES -->
+
+            <div class="panel">
+
+              <div class="panel-head">
+
+                <div>
+
+                  <div class="eyebrow">
+                    APRENENTATGE
+                  </div>
+
+                  <h2>
+                    Classes
+                  </h2>
+
+                </div>
+
+                <button type="button"
+                  class="link-button"
+                  data-section="classes"
+                >
+                  Veure totes →
+                </button>
+
+              </div>
+
+              <div
+                id="dashboard-classes"
+                class="class-cards"
+              ></div>
+
+            </div>
+
+          </div>
+
+
+          <!-- COLUMNA DRETA -->
+
+          <aside class="dashboard-side">
+
+
+            <!-- AGENDA -->
+
+            <div class="panel agenda-panel">
+
+              <div class="panel-head">
+
+                <div>
+
+                  <div class="eyebrow">
+                    AVUI
+                  </div>
+
+                  <h2 id="agenda-date">
+                    Avui
+                  </h2>
+
+                </div>
+
+                <button type="button"
+                  class="link-button"
+                  data-section="calendar"
+                >
+                  Calendari →
+                </button>
+
+              </div>
+
+              <div
+                id="agenda-list"
+                class="agenda-list"
+              ></div>
+
+            </div>
+
+
+            <!-- TASQUES -->
+
+            <div class="panel">
+
+              <div class="panel-head">
+
+                <div>
+
+                  <div class="eyebrow">
+                    ENTREGUES
+                  </div>
+
+                  <h2>
+                    S'entrega aviat
+                  </h2>
+
+                </div>
+
+                <button type="button"
+                  class="link-button"
+                  data-section="tasks"
+                >
+                  Veure totes →
+                </button>
+
+              </div>
+
+              <div
+                id="dashboard-tasks"
+                class="compact-list"
+              ></div>
+
+            </div>
+
+
+            <!-- EINES IA -->
+
+            <div class="panel">
+
+              <div class="panel-head">
+
+                <div>
+
+                  <div class="eyebrow">
+                    IA
+                  </div>
+
+                  <h2>
+                    Eines d'aprenentatge
+                  </h2>
+
+                </div>
+
+                <button type="button"
+                  class="link-button"
+                  data-section="ai"
+                >
+                  Veure totes →
+                </button>
+
+              </div>
+
+
+              <div class="learning-tools">
+
+                <button type="button"
+                  data-mode="EXPLICAR"
+                  data-section="ai"
+                >
+
+                  <span>✦</span>
+
+                  <div>
+                    <b>Explica'm un tema</b>
+                    <small>Entén-lo pas a pas.</small>
+                  </div>
+
+                  →
+
+                </button>
+
+
+                <button type="button"
+                  data-mode="TEST"
+                  data-section="ai"
+                >
+
+                  <span>✓</span>
+
+                  <div>
+                    <b>Practica amb un test</b>
+                    <small>5 preguntes amb correcció.</small>
+                  </div>
+
+                  →
+
+                </button>
+
+
+                <button type="button"
+                  data-mode="ESTUDIAR"
+                  data-section="ai"
+                >
+
+                  <span>◫</span>
+
+                  <div>
+                    <b>Què estudio ara?</b>
+                    <small>Prioritza la feina.</small>
+                  </div>
+
+                  →
+
+                </button>
+
+              </div>
+
+            </div>
+
+          </aside>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           CALENDARI
+      ================================================= -->
+
+      <section
+        id="section-calendar"
+        class="section"
+      >
+
+        <div class="section-title">
+
+          <div>
+
+            <div class="eyebrow">
+              ORGANITZACIÓ
+            </div>
+
+            <h1>
+              Calendari
+            </h1>
+
+            <p>
+              Tot el que tens a classe,
+              en una sola vista.
+            </p>
+
+          </div>
+
+          <button type="button"
+            class="btn btn-yellow"
+            id="calendar-today"
+          >
+            Avui
+          </button>
+
+        </div>
+
+
+        <div class="panel calendar-panel">
+
+          <div class="calendar-toolbar">
+
+            <button type="button"
+              class="icon-button"
+              id="cal-prev"
+            >
+              ←
+            </button>
+
+            <h2 id="calendar-title">
+              Aquesta setmana
+            </h2>
+
+            <button type="button"
+              class="icon-button"
+              id="cal-next"
+            >
+              →
+            </button>
+
+          </div>
+
+          <div
+            id="calendar-grid"
+            class="calendar-grid"
+          ></div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           TASQUES
+      ================================================= -->
+
+      <section
+        id="section-tasks"
+        class="section"
+      >
+
+        <div class="section-title">
+
+          <div>
+
+            <div class="eyebrow">
+              FEINA
+            </div>
+
+            <h1>
+              Tasques
+            </h1>
+
+            <p>
+              Controla què tens pendent
+              i què ja has acabat.
+            </p>
+
+          </div>
+
+          <button type="button"
+            class="btn btn-yellow"
+            id="new-task"
+          >
+            ＋ Nova tasca
+          </button>
+
+        </div>
+
+
+        <div class="toolbar">
+
+          <div
+            class="segmented"
+            id="task-filter"
+          >
+
+            <button type="button"
+              class="active"
+              data-filter="totes"
+            >
+              Totes
+            </button>
+
+            <button type="button" data-filter="pendent">
+              Pendents
+            </button>
+
+            <button type="button" data-filter="en procés">
+              En procés
+            </button>
+
+            <button type="button" data-filter="completada">
+              Completades
+            </button>
+
+          </div>
+
+
+          <input
+            id="task-search"
+            class="search-input"
+            placeholder="Cerca una tasca..."
+          >
+
+        </div>
+
+
+        <div
+          id="tasks-list"
+          class="task-list"
+        ></div>
+
+      </section>
+
+
+      <!-- =================================================
+           EXÀMENS
+      ================================================= -->
+
+      <section
+        id="section-exams"
+        class="section"
+      >
+
+        <div class="section-title">
+
+          <div>
+
+            <div class="eyebrow">
+              PREPARACIÓ
+            </div>
+
+            <h1>
+              Exàmens
+            </h1>
+
+            <p>
+              Prepara amb temps el que s'acosta.
+            </p>
+
+          </div>
+
+          <button type="button"
+            class="btn btn-yellow"
+            id="new-exam"
+          >
+            ＋ Nou examen
+          </button>
+
+        </div>
+
+
+        <div
+          id="exams-list"
+          class="exam-grid"
+        ></div>
+
+      </section>
+
+
+      <!-- =================================================
+           PLANIFICADOR
+      ================================================= -->
+
+      <section
+        id="section-planner"
+        class="section"
+      >
+
+        <div class="section-title">
+
+          <div>
+
+            <div class="eyebrow">
+              PLANIFICACIÓ
+            </div>
+
+            <h1>
+              Planificador
+            </h1>
+
+            <p>
+              Combina tasques, exàmens
+              i sessions d'estudi.
+            </p>
+
+          </div>
+
+          <button type="button"
+            class="btn btn-yellow"
+            id="generate-plan"
+          >
+            ✦ Generar pla amb IA
+          </button>
+
+        </div>
+
+
+        <div class="planner-layout">
+
+          <div class="panel calendar-panel">
+
+            <div class="calendar-toolbar">
+
+              <button type="button"
+                class="icon-button"
+                id="prev-week"
+              >
+                ←
+              </button>
+
+              <h2 id="week-title">
+                Aquesta setmana
+              </h2>
+
+              <button type="button"
+                class="icon-button"
+                id="next-week"
+              >
+                →
+              </button>
+
+            </div>
+
+            <div
+              id="week-grid"
+              class="calendar-grid"
+            ></div>
+
+          </div>
+
+
+          <div class="panel">
+
+            <div class="panel-head">
+
+              <div>
+
+                <div class="eyebrow">
+                  IA
+                </div>
+
+                <h2>
+                  Sessions recomanades
+                </h2>
+
+              </div>
+
+            </div>
+
+
+            <div
+              id="plan-sessions"
+              class="plan-sessions"
+            ></div>
+
+
+            <button type="button"
+              id="add-session"
+              class="btn btn-outline wide"
+            >
+              ＋ Afegir sessió
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           CLASSES
+      ================================================= -->
+
+      <section
+        id="section-classes"
+        class="section"
+      >
+
+        <div class="section-title">
+
+          <div>
+
+            <div class="eyebrow">
+              AULA
+            </div>
+
+            <h1>
+              Classes
+            </h1>
+
+            <p>
+              Els teus espais de classe,
+              deures, avisos i exàmens.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div
+          id="class-actions"
+          class="class-actions"
+        ></div>
+
+
+        <div
+          id="classes-list"
+          class="class-cards large"
+        ></div>
+
+
+        <div
+          id="class-detail"
+          class="hidden"
+        ></div>
+
+      </section>
+
+
+      <!-- =================================================
+           IA
+      ================================================= -->
+
+      <section
+        id="section-ai"
+        class="section"
+      >
+
+        <div class="section-title">
+
+          <div>
+
+            <div class="eyebrow">
+              ASSISTENT
+            </div>
+
+            <h1>
+              IA d'estudi
+            </h1>
+
+            <p>
+              Una IA que coneix les teves
+              tasques i exàmens.
+            </p>
+
+          </div>
+
+          <span class="ai-badge">
+            ✦ Català
+          </span>
+
+        </div>
+
+
+        <div class="ai-layout">
+
+
+          <div class="panel chat-panel">
+
+            <div
+              class="ai-modes"
+              id="ai-modes"
+            >
+
+              <button type="button"
+                class="active"
+                data-mode="DUBTE"
+              >
+                Dubte
+              </button>
+
+              <button type="button" data-mode="EXPLICAR">
+                Explicar
+              </button>
+
+              <button type="button" data-mode="ESTUDIAR">
+                Estudiar
+              </button>
+
+              <button type="button" data-mode="RESUMIR">
+                Resumir
+              </button>
+
+              <button type="button" data-mode="TEST">
+                Test
+              </button>
+
+            </div>
+
+
+            <div
+              id="chat-log"
+              class="chat-log"
+            >
+
+              <div class="chat-bubble ai">
+
+                <span>✦</span>
+
+                <div>
+
+                  <b>
+                    MiniClassroom IA
+                  </b>
+
+                  <p>
+                    Hola! Puc ajudar-te amb
+                    una assignatura, una tasca,
+                    un examen o la teva planificació.
+                  </p>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <form
+              id="ai-form"
+              class="chat-form"
+            >
+
+              <textarea
+                id="ai-input"
+                placeholder="Escriu una pregunta..."
+                rows="1"
+              ></textarea>
+
+              <button type="button" class="send-btn">
+                ↑
+              </button>
+
+            </form>
+
+          </div>
+
+
+          <div class="ai-tools">
+
+            <button type="button"
+              class="tool-card"
+              id="open-test"
+            >
+
+              <span>✓</span>
+
+              <div>
+                <b>Crear un test</b>
+                <small>
+                  5 preguntes i correcció.
+                </small>
+              </div>
+
+              →
+
+            </button>
+
+
+            <button type="button"
+              class="tool-card"
+              id="open-reco"
+            >
+
+              <span>▥</span>
+
+              <div>
+                <b>Prioritzar la feina</b>
+                <small>
+                  Analitza tasques i exàmens.
+                </small>
+              </div>
+
+              →
+
+            </button>
+
+
+            <div class="panel ai-note">
+
+              <div class="eyebrow">
+                APRENENTATGE
+              </div>
+
+              <h3>
+                La IA t'ajuda a estudiar
+              </h3>
+
+              <p>
+                Demana explicacions, exemples,
+                pistes i preguntes.
+                No només respostes.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           PROGRÉS
+      ================================================= -->
+
+      <section
+        id="section-progress"
+        class="section"
+      >
+
+        <div class="section-title">
+
+          <div>
+
+            <div class="eyebrow">
+              EVOLUCIÓ
+            </div>
+
+            <h1>
+              Progrés
+            </h1>
+
+            <p>
+              Visualitza com avança el teu estudi.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="progress-grid">
+
+          <div class="panel progress-card">
+
+            <div class="eyebrow">
+              TASQUES
+            </div>
+
+            <strong id="progress-number">
+              0%
+            </strong>
+
+            <div class="progress-track">
+              <span id="progress-bar"></span>
+            </div>
+
+            <small id="progress-caption">
+              0 de 0 tasques
+            </small>
+
+          </div>
+
+
+          <div class="panel progress-card">
+
+            <div class="eyebrow">
+              TEMPS D'ESTUDI
+            </div>
+
+            <strong id="study-number">
+              0 min
+            </strong>
+
+            <div class="progress-track yellow-track">
+              <span id="study-bar"></span>
+            </div>
+
+            <small id="study-caption">
+              0 min completats
+            </small>
+
+          </div>
+
+        </div>
+
+
+        <div class="panel">
+
+          <div class="panel-head">
+
+            <div>
+
+              <div class="eyebrow">
+                SETMANA
+              </div>
+
+              <h2>
+                Temps d'estudi
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <div
+            id="progress-chart"
+            class="bar-chart"
+          ></div>
+
+        </div>
+
+
+        <div
+          class="panel"
+          style="margin-top:18px"
+        >
+
+          <div class="panel-head">
+
+            <div>
+
+              <div class="eyebrow">
+                PRÀCTICA
+              </div>
+
+              <h2>
+                Últims tests
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <div
+            id="test-history"
+            class="history-list"
+          ></div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           PERFIL
+      ================================================= -->
+
+      <section
+        id="section-profile"
+        class="section"
+      >
+
+        <div class="section-title">
+
+          <div>
+
+            <div class="eyebrow">
+              COMPTE
+            </div>
+
+            <h1>
+              Perfil
+            </h1>
+
+            <p>
+              Les teves dades de MiniClassroom.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="profile-layout">
+
+          <div class="panel profile-card">
+
+            <span
+              class="profile-avatar"
+              id="profile-avatar"
+            >
+              F
+            </span>
+
+            <h2 id="profile-name">
+              —
+            </h2>
+
+            <p id="profile-email">
+              —
+            </p>
+
+            <span
+              id="profile-role"
+              class="role-badge"
+            >
+              Alumne
+            </span>
+
+          </div>
+
+
+          <div class="panel">
+
+            <div class="eyebrow">
+              TdR · EXPERIMENT
+            </div>
+
+            <h2>
+              Seguiment de l'aprenentatge
+            </h2>
+
+            <p>
+              Es registren de manera no invasiva
+              recomanacions de la IA, tasques prioritzades,
+              plans, tasques completades i resultats dels tests.
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+</div>
+
+
+<div id="modal-root"></div>
+
+<script src="/static/app.js"></script>
+
+</body>
+</html>
