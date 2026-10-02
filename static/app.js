@@ -1091,9 +1091,7 @@ function openTaskModal(task = null) {
             </select>
           </label>
 
-          <label
-            style="grid-column:1/-1"
-          >
+          <label style="grid-column:1/-1">
             Descripció
 
             <textarea
@@ -1108,7 +1106,6 @@ function openTaskModal(task = null) {
             class="modal-actions"
             style="grid-column:1/-1"
           >
-
             <button
               type="button"
               class="btn"
@@ -1120,9 +1117,8 @@ function openTaskModal(task = null) {
             <button
               class="btn primary"
             >
-              Guardar tasca
+              ${task ? "Guardar canvis" : "Crear tasca"}
             </button>
-
           </div>
 
         </form>
@@ -1158,27 +1154,22 @@ function openTaskModal(task = null) {
         );
 
       try {
-        if (task) {
-          await api(
-            `/api/tasks/${task.id}`,
-            {
-              method: "PATCH",
-              body: JSON.stringify(
+        await api(
+          task
+            ? `/api/tasks/${task.id}`
+            : "/api/tasks",
+          {
+            method:
+              task
+                ? "PATCH"
+                : "POST",
+
+            body:
+              JSON.stringify(
                 data
               )
-            }
-          );
-        } else {
-          await api(
-            "/api/tasks",
-            {
-              method: "POST",
-              body: JSON.stringify(
-                data
-              )
-            }
-          );
-        }
+          }
+        );
 
         root.innerHTML = "";
 
@@ -1197,7 +1188,6 @@ function openTaskModal(task = null) {
       }
     };
 }
-
 
 /* ============================================================
    EXÀMENS
@@ -1219,9 +1209,11 @@ function renderExams() {
         "
       >
         <span>□</span>
+
         <b>
           Encara no tens exàmens.
         </b>
+
         <small>
           Afegeix la primera data
           i prepara-la amb temps.
@@ -1275,6 +1267,7 @@ function renderExams() {
 
             <div class="exam-days">
               ${Math.max(0, days)}
+
               <span
                 style="
                   font-size:11px;
@@ -1298,18 +1291,22 @@ function renderExams() {
                 exam.difficulty ||
                 "mitjana"
               )}
+
               ·
+
               ${exam.study_minutes || 0}
               min de preparació
             </small>
 
             <div class="exam-actions">
+
               <button
                 class="delete-link"
                 data-exam-delete="${exam.id}"
               >
                 Eliminar
               </button>
+
             </div>
 
           </div>
@@ -1322,6 +1319,7 @@ function renderExams() {
       (button) => {
         button.onclick =
           async () => {
+
             if (
               !confirm(
                 "Vols eliminar aquest examen?"
@@ -1366,7 +1364,10 @@ function openExamModal() {
       <div class="modal">
 
         <div class="modal-head">
-          <h3>Nou examen</h3>
+
+          <h3>
+            Nou examen
+          </h3>
 
           <button
             class="close"
@@ -1374,6 +1375,7 @@ function openExamModal() {
           >
             ×
           </button>
+
         </div>
 
         <form
@@ -1383,6 +1385,7 @@ function openExamModal() {
 
           <label>
             Assignatura
+
             <input
               name="subject"
               required
@@ -1391,6 +1394,7 @@ function openExamModal() {
 
           <label>
             Data
+
             <input
               name="exam_date"
               type="date"
@@ -1482,6 +1486,7 @@ function openExamModal() {
 
   $("#exam-form").onsubmit =
     async (event) => {
+
       event.preventDefault();
 
       const data =
@@ -1497,13 +1502,16 @@ function openExamModal() {
         );
 
       try {
+
         await api(
           "/api/exams",
           {
             method: "POST",
-            body: JSON.stringify(
-              data
-            )
+
+            body:
+              JSON.stringify(
+                data
+              )
           }
         );
 
@@ -1530,8 +1538,11 @@ function openExamModal() {
 
 async function loadClasses() {
   try {
+
     const data =
-      await api("/api/classes");
+      await api(
+        "/api/classes"
+      );
 
     state.classes =
       data.classes || [];
@@ -1544,6 +1555,7 @@ async function loadClasses() {
 }
 
 function renderClasses() {
+
   const actions =
     $("#class-actions");
 
@@ -1553,6 +1565,7 @@ function renderClasses() {
     state.user.role ===
     "professor"
   ) {
+
     actions.innerHTML = `
       <button
         class="btn primary"
@@ -1561,7 +1574,9 @@ function renderClasses() {
         ＋ Crear classe
       </button>
     `;
+
   } else {
+
     actions.innerHTML = `
       <button
         class="btn primary"
@@ -1570,17 +1585,24 @@ function renderClasses() {
         ＋ Unir-me amb un codi
       </button>
     `;
+
   }
 
   if (
     state.user.role ===
     "professor"
   ) {
+
     $("#new-class").onclick =
-      () => openClassCreate();
+      () =>
+        openClassCreate();
+
   } else {
+
     $("#join-class").onclick =
-      () => openJoinModal();
+      () =>
+        openJoinModal();
+
   }
 
   const box =
@@ -1598,6 +1620,7 @@ function renderClasses() {
   );
 
   if (!state.classes.length) {
+
     box.innerHTML = `
       <div
         class="card empty-state"
@@ -1606,7 +1629,10 @@ function renderClasses() {
           min-height:260px
         "
       >
-        <span>⌘</span>
+
+        <span>
+          ⌘
+        </span>
 
         <b>
           Encara no tens classes.
@@ -1619,6 +1645,7 @@ function renderClasses() {
               : "Demana el codi de 6 caràcters al teu professor."
           }
         </small>
+
       </div>
     `;
 
@@ -1632,12 +1659,14 @@ function renderClasses() {
           <div class="class-card card">
 
             <p class="eyebrow">
+
               ${
                 classroom.membership ===
                 "professor"
                   ? "LA TEVA CLASSE"
                   : "CLASSE"
               }
+
             </p>
 
             <h3>
@@ -1693,10 +1722,12 @@ function renderClasses() {
   $$("[data-open-class]")
     .forEach(
       (button) => {
+
         button.onclick = () =>
           openClassDetail(
             button.dataset.openClass
           );
+
       }
     );
 }
@@ -1707,6 +1738,7 @@ function renderClasses() {
 ============================================================ */
 
 function openClassCreate() {
+
   const root =
     $("#modal-root");
 
@@ -1716,6 +1748,7 @@ function openClassCreate() {
       <div class="modal">
 
         <div class="modal-head">
+
           <h3>
             Crear una classe
           </h3>
@@ -1726,6 +1759,7 @@ function openClassCreate() {
           >
             ×
           </button>
+
         </div>
 
         <form
@@ -1779,29 +1813,35 @@ function openClassCreate() {
   $$("[data-close]", root)
     .forEach(
       (button) => {
+
         button.onclick =
           () =>
             root.innerHTML = "";
+
       }
     );
 
   $("#class-form").onsubmit =
     async (event) => {
+
       event.preventDefault();
 
       try {
+
         const data =
           await api(
             "/api/classes",
             {
               method: "POST",
-              body: JSON.stringify(
-                Object.fromEntries(
-                  new FormData(
-                    event.target
-                  ).entries()
+
+              body:
+                JSON.stringify(
+                  Object.fromEntries(
+                    new FormData(
+                      event.target
+                    ).entries()
+                  )
                 )
-              )
             }
           );
 
@@ -1820,6 +1860,7 @@ function openClassCreate() {
       } catch (error) {
         showToastFromError(error);
       }
+
     };
 }
 
@@ -1829,6 +1870,7 @@ function openClassCreate() {
 ============================================================ */
 
 function openJoinModal() {
+
   const root =
     $("#modal-root");
 
@@ -1910,14 +1952,17 @@ function openJoinModal() {
   $$("[data-close]", root)
     .forEach(
       (button) => {
+
         button.onclick =
           () =>
             root.innerHTML = "";
+
       }
     );
 
   $("#join-form").onsubmit =
     async (event) => {
+
       event.preventDefault();
 
       const data =
@@ -1933,14 +1978,17 @@ function openJoinModal() {
           .trim();
 
       try {
+
         const result =
           await api(
             "/api/classes/join",
             {
               method: "POST",
-              body: JSON.stringify(
-                data
-              )
+
+              body:
+                JSON.stringify(
+                  data
+                )
             }
           );
 
@@ -1957,570 +2005,1230 @@ function openJoinModal() {
       } catch (error) {
         showToastFromError(error);
       }
+
     };
 }
 
-
 /* ============================================================
-   AULA COMPLETA
+   DETALL DE LA CLASSE — AULA TIPUS CLASSROOM
 ============================================================ */
 
-async function openClassDetail(
-  classId
-) {
-  try {
-    const data =
-      await api(
-        `/api/classes/${classId}`
-      );
+async function openClassDetail(classId) {
+  const box =
+    $("#classes-list");
 
-    const classroom =
-      data.class;
+  const detail =
+    $("#class-detail");
 
-    $("#classes-list")
-      ?.classList.add(
-        "hidden"
-      );
+  if (!detail) return;
 
-    $("#class-actions")
-      ?.classList.add(
-        "hidden"
-      );
-
-    const box =
-      $("#class-detail");
-
-    box.classList.remove(
-      "hidden"
+  const classroom =
+    state.classes.find(
+      (item) =>
+        String(item.id) ===
+        String(classId)
     );
 
-    const content =
-      data.content || [];
+  if (!classroom) {
+    toast(
+      "No s'ha trobat la classe.",
+      true
+    );
+    return;
+  }
 
-    const canManage =
-      Number(
-        classroom.teacher_id
-      ) ===
-      Number(
-        state.user?.id
-      );
+  box?.classList.add(
+    "hidden"
+  );
 
-    const announcements =
-      content.filter(
-        (item) =>
-          (
-            item.content_type ||
-            item.kind
-          ) === "avis"
-      );
+  detail.classList.remove(
+    "hidden"
+  );
 
-    const work =
-      content.filter(
-        (item) =>
-          String(
-            item.content_type ||
-            item.kind ||
-            ""
-          ) !== "avis"
-      );
+  detail.innerHTML = `
+    <div class="classroom-detail">
 
-    box.innerHTML = `
-      <div class="classroom-shell">
+      <div class="classroom-cover">
 
-        <div class="classroom-banner">
+        <div class="classroom-cover-pattern"></div>
+
+        <div class="classroom-cover-content">
 
           <div>
-
-            <button
-              class="classroom-back"
-              id="back-classes"
-            >
-              ← Classes
-            </button>
-
-            <div class="classroom-kicker">
+            <span class="eyebrow">
               AULA DIGITAL
-            </div>
+            </span>
 
-            <h2>
+            <h1>
               ${esc(
                 classroom.name
               )}
-            </h2>
+            </h1>
 
             <p>
               ${esc(
                 classroom.teacher_name ||
                 classroom.teacher ||
-                ""
+                "Professor"
               )}
-
-              · Codi
-
-              <strong>
-                ${esc(
-                  classroom.code
-                )}
-              </strong>
             </p>
-
           </div>
 
-          <div class="classroom-code">
-            ${esc(
-              classroom.code
-            )}
+          <div class="class-code-large">
+
+            <span>
+              Codi de la classe
+            </span>
+
+            <strong>
+              ${esc(
+                classroom.code
+              )}
+            </strong>
+
           </div>
-
-        </div>
-
-        <nav class="classroom-tabs">
-
-          <button
-            class="class-tab active"
-            data-tab="stream"
-          >
-            Tauler
-          </button>
-
-          <button
-            class="class-tab"
-            data-tab="work"
-          >
-            Treball de classe
-          </button>
-
-          <button
-            class="class-tab"
-            data-tab="people"
-          >
-            Persones
-          </button>
-
-        </nav>
-
-        <div class="classroom-grid">
-
-          <aside class="classroom-aside">
-
-            <div class="classroom-card">
-
-              <h4>
-                Codi de la classe
-              </h4>
-
-              <strong class="code-large">
-                ${esc(
-                  classroom.code
-                )}
-              </strong>
-
-              <button
-                class="btn secondary"
-                id="copy-class-code"
-              >
-                Copiar codi
-              </button>
-
-            </div>
-
-            <div class="classroom-card">
-
-              <h4>
-                Pròximes entregues
-              </h4>
-
-              ${
-                work.length
-                  ? work
-                      .slice(0, 4)
-                      .map(
-                        (item) => `
-                          <div class="upcoming-item">
-
-                            <b>
-                              ${esc(
-                                item.title
-                              )}
-                            </b>
-
-                            <small>
-                              ${
-                                item.event_date
-                                  ? fmtDate(
-                                      item.event_date
-                                    )
-                                  : "Sense data"
-                              }
-                            </small>
-
-                          </div>
-                        `
-                      )
-                      .join("")
-                  : `
-                    <small class="muted">
-                      No hi ha cap entrega.
-                    </small>
-                  `
-              }
-
-            </div>
-
-          </aside>
-
-          <main class="classroom-main">
-
-            <section
-              class="class-pane active"
-              data-pane="stream"
-            >
-
-              ${
-                canManage
-                  ? `
-                    <button
-                      class="btn primary classroom-publish"
-                      id="new-content"
-                    >
-                      ＋ Nova publicació
-                    </button>
-                  `
-                  : ""
-              }
-
-              <div class="stream-list">
-
-                ${
-                  announcements.length
-                    ? announcements
-                        .map(
-                          (item) => `
-                            <article class="class-post">
-
-                              <div class="post-avatar">
-                                ${initials(
-                                  item.author_name ||
-                                  classroom.teacher_name ||
-                                  "P"
-                                )}
-                              </div>
-
-                              <div>
-
-                                <div class="post-meta">
-
-                                  <b>
-                                    ${esc(
-                                      item.author_name ||
-                                      classroom.teacher_name ||
-                                      "Professor"
-                                    )}
-                                  </b>
-
-                                  <span>
-                                    ${fmtDate(
-                                      item.created_at
-                                    )}
-                                  </span>
-
-                                </div>
-
-                                <h3>
-                                  ${esc(
-                                    item.title
-                                  )}
-                                </h3>
-
-                                <p>
-                                  ${esc(
-                                    item.body || ""
-                                  )}
-                                </p>
-
-                                ${
-                                  item.event_date
-                                    ? `
-                                      <div class="post-date">
-                                        📅
-                                        ${fmtDate(
-                                          item.event_date
-                                        )}
-                                      </div>
-                                    `
-                                    : ""
-                                }
-
-                              </div>
-
-                            </article>
-                          `
-                        )
-                        .join("")
-                    : `
-                      <div class="class-empty">
-
-                        <strong>
-                          Encara no hi ha anuncis.
-                        </strong>
-
-                        <span>
-                          Quan el professor
-                          publiqui alguna cosa,
-                          apareixerà aquí.
-                        </span>
-
-                      </div>
-                    `
-                }
-
-              </div>
-
-            </section>
-
-            <section
-              class="class-pane"
-              data-pane="work"
-            >
-
-              <div class="work-list">
-
-                ${
-                  work.length
-                    ? work
-                        .map(
-                          (item) => `
-                            <article class="work-card">
-
-                              <span class="work-type">
-                                ${esc(
-                                  item.content_type ||
-                                  item.kind ||
-                                  "Activitat"
-                                )}
-                              </span>
-
-                              <h3>
-                                ${esc(
-                                  item.title
-                                )}
-                              </h3>
-
-                              <p>
-                                ${esc(
-                                  item.body || ""
-                                )}
-                              </p>
-
-                              <small>
-                                ${
-                                  item.event_date
-                                    ? "Data: " +
-                                      fmtDate(
-                                        item.event_date
-                                      )
-                                    : "Sense data"
-                                }
-                              </small>
-
-                            </article>
-                          `
-                        )
-                        .join("")
-                    : `
-                      <div class="class-empty">
-
-                        <strong>
-                          No hi ha treball de classe.
-                        </strong>
-
-                        <span>
-                          Els deures i activitats
-                          publicats pel professor
-                          apareixeran aquí.
-                        </span>
-
-                      </div>
-                    `
-                }
-
-              </div>
-
-            </section>
-
-            <section
-              class="class-pane"
-              data-pane="people"
-            >
-
-              <div class="people-card">
-
-                <h3>
-                  Professor
-                </h3>
-
-                <div class="person-row">
-
-                  <span class="post-avatar">
-                    ${initials(
-                      classroom.teacher_name ||
-                      "P"
-                    )}
-                  </span>
-
-                  <b>
-                    ${esc(
-                      classroom.teacher_name ||
-                      "Professor"
-                    )}
-                  </b>
-
-                </div>
-
-                <h3>
-                  Alumnes ·
-                  ${data.students?.length || 0}
-                </h3>
-
-                ${
-                  data.students?.length
-                    ? data.students
-                        .map(
-                          (student) => `
-                            <div class="person-row">
-
-                              <span
-                                class="post-avatar small"
-                              >
-                                ${initials(
-                                  student.name ||
-                                  student.username
-                                )}
-                              </span>
-
-                              <span>
-                                ${esc(
-                                  student.name ||
-                                  student.username
-                                )}
-                              </span>
-
-                            </div>
-                          `
-                        )
-                        .join("")
-                    : `
-                      <p class="muted">
-                        Encara no hi ha alumnes.
-                      </p>
-                    `
-                }
-
-              </div>
-
-            </section>
-
-          </main>
 
         </div>
 
       </div>
-    `;
 
-    $("#back-classes").onclick =
-      () => {
-        box.classList.add(
-          "hidden"
-        );
+      <div class="classroom-tabs">
 
-        $("#classes-list")
-          ?.classList.remove(
-            "hidden"
-          );
+        <button
+          class="classroom-tab active"
+          data-class-tab="stream"
+        >
+          Tauler
+        </button>
 
-        $("#class-actions")
-          ?.classList.remove(
-            "hidden"
-          );
-      };
+        <button
+          class="classroom-tab"
+          data-class-tab="work"
+        >
+          Treball de classe
+        </button>
 
-    $$(".class-tab", box)
+        <button
+          class="classroom-tab"
+          data-class-tab="people"
+        >
+          Persones
+        </button>
+
+        <button
+          class="classroom-tab"
+          data-class-tab="grades"
+        >
+          Qualificacions
+        </button>
+
+      </div>
+
+      <div
+        class="classroom-body"
+        id="classroom-body"
+      >
+
+        <div class="classroom-loading">
+          <span class="loading-dot"></span>
+          Carregant l'aula...
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+  const body =
+    $("#classroom-body");
+
+  try {
+
+    const data =
+      await api(
+        `/api/classes/${classId}`
+      );
+
+    renderClassroomTab(
+      classroom,
+      data,
+      "stream"
+    );
+
+    $$(".classroom-tab", detail)
       .forEach(
-        (button) => {
-          button.onclick = () => {
+        (tab) => {
 
-            $$(".class-tab", box)
+          tab.onclick = () => {
+
+            $$(".classroom-tab", detail)
               .forEach(
-                (tab) =>
-                  tab.classList.toggle(
-                    "active",
-                    tab === button
+                (item) =>
+                  item.classList.remove(
+                    "active"
                   )
               );
 
-            $$(".class-pane", box)
-              .forEach(
-                (pane) =>
-                  pane.classList.toggle(
-                    "active",
-                    pane.dataset.pane ===
-                    button.dataset.tab
-                  )
-              );
+            tab.classList.add(
+              "active"
+            );
+
+            renderClassroomTab(
+              classroom,
+              data,
+              tab.dataset.classTab
+            );
+
           };
+
         }
       );
 
-    const copyButton =
-      $("#copy-class-code");
-
-    if (copyButton) {
-      copyButton.onclick =
-        async () => {
-          try {
-            await navigator.clipboard.writeText(
-              classroom.code
-            );
-
-            toast(
-              "Codi copiat."
-            );
-
-          } catch {
-            toast(
-              "Codi: " +
-              classroom.code
-            );
-          }
-        };
-    }
-
-    if (
-      canManage &&
-      $("#new-content")
-    ) {
-      $("#new-content").onclick =
-        () =>
-          openContentModal(
-            classId
-          );
-    }
-
   } catch (error) {
-    showToastFromError(error);
+
+    body.innerHTML = `
+      <div class="card empty-state">
+
+        <span>!</span>
+
+        <b>
+          No s'ha pogut carregar l'aula.
+        </b>
+
+        <small>
+          ${esc(
+            error.message ||
+            "Error intern del servidor."
+          )}
+        </small>
+
+        <button
+          class="btn secondary"
+          id="back-to-classes"
+        >
+          Tornar a les classes
+        </button>
+
+      </div>
+    `;
+
+    $("#back-to-classes").onclick =
+      () => {
+        detail.classList.add(
+          "hidden"
+        );
+
+        box?.classList.remove(
+          "hidden"
+        );
+      };
   }
 }
 
 
 /* ============================================================
+   RENDER DE LES PESTANYES DE LA CLASSE
+============================================================ */
+
+function renderClassroomTab(
+  classroom,
+  data,
+  tab
+) {
+
+  const body =
+    $("#classroom-body");
+
+  if (!body) return;
+
+  const announcements =
+    data.announcements ||
+    data.posts ||
+    data.class_content ||
+    [];
+
+  const work =
+    data.work ||
+    data.assignments ||
+    data.tasks ||
+    [];
+
+  const students =
+    data.students ||
+    data.members ||
+    [];
+
+  const grades =
+    data.grades ||
+    [];
+
+  if (tab === "stream") {
+
+    renderClassroomStream(
+      classroom,
+      announcements,
+      data
+    );
+
+    return;
+  }
+
+  if (tab === "work") {
+
+    renderClassroomWork(
+      classroom,
+      work,
+      data
+    );
+
+    return;
+  }
+
+  if (tab === "people") {
+
+    renderClassroomPeople(
+      classroom,
+      students,
+      data
+    );
+
+    return;
+  }
+
+  if (tab === "grades") {
+
+    renderClassroomGrades(
+      classroom,
+      grades,
+      data
+    );
+
+    return;
+  }
+}
+
+
+/* ============================================================
+   TAULER
+============================================================ */
+
+function renderClassroomStream(
+  classroom,
+  announcements,
+  data
+) {
+
+  const body =
+    $("#classroom-body");
+
+  const isProfessor =
+    state.user?.role ===
+      "professor" &&
+    String(
+      classroom.teacher_id ||
+      classroom.teacherId ||
+      ""
+    ) ===
+      String(
+        state.user?.id || ""
+      );
+
+  body.innerHTML = `
+
+    <div class="classroom-layout">
+
+      <aside class="classroom-aside">
+
+        <div class="class-info-card card">
+
+          <span class="eyebrow">
+            INFORMACIÓ
+          </span>
+
+          <h3>
+            ${esc(
+              classroom.name
+            )}
+          </h3>
+
+          <div class="info-row">
+
+            <span>
+              Professor
+            </span>
+
+            <strong>
+              ${esc(
+                classroom.teacher_name ||
+                classroom.teacher ||
+                "—"
+              )}
+            </strong>
+
+          </div>
+
+          <div class="info-row">
+
+            <span>
+              Codi
+            </span>
+
+            <strong
+              class="mono"
+            >
+              ${esc(
+                classroom.code
+              )}
+            </strong>
+
+          </div>
+
+          <div class="info-row">
+
+            <span>
+              Alumnes
+            </span>
+
+            <strong>
+              ${
+                classroom.student_count ||
+                studentsCount(data) ||
+                0
+              }
+            </strong>
+
+          </div>
+
+        </div>
+
+        <div class="card class-side-note">
+
+          <span class="eyebrow">
+            MINIASSISTENT
+          </span>
+
+          <p>
+            ${isProfessor
+              ? "Publica avisos i materials perquè l'aula estigui sempre actualitzada."
+              : "Consulta les tasques i avisos de la classe des d'un mateix lloc."
+            }
+          </p>
+
+        </div>
+
+      </aside>
+
+      <main class="classroom-stream">
+
+        ${
+          isProfessor
+            ? `
+              <div class="stream-composer card">
+
+                <div class="composer-avatar">
+                  ${initials(
+                    state.user?.name
+                  )}
+                </div>
+
+                <button
+                  class="composer-button"
+                  id="new-class-content"
+                >
+                  Publica un anunci o material...
+                </button>
+
+              </div>
+            `
+            : ""
+        }
+
+        ${
+          announcements.length
+            ? announcements
+                .map(
+                  (item) =>
+                    renderAnnouncement(
+                      item
+                    )
+                )
+                .join("")
+            : `
+              <div class="card empty-state">
+
+                <span>◌</span>
+
+                <b>
+                  Encara no hi ha activitat.
+                </b>
+
+                <small>
+                  ${
+                    isProfessor
+                      ? "Publica el primer anunci per començar l'activitat de la classe."
+                      : "Quan el professor publiqui alguna cosa, apareixerà aquí."
+                  }
+                </small>
+
+              </div>
+            `
+        }
+
+      </main>
+
+    </div>
+  `;
+
+  if (
+    $("#new-class-content")
+  ) {
+    $("#new-class-content").onclick =
+      () =>
+        openContentModal(
+          classroom.id
+        );
+  }
+}
+
+
+/* ============================================================
+   ANUNCIS I MATERIALS
+============================================================ */
+
+function renderAnnouncement(
+  item
+) {
+
+  const kind =
+    String(
+      item.kind ||
+      item.type ||
+      "announcement"
+    ).toLowerCase();
+
+  let label =
+    "ANUNCI";
+
+  if (
+    kind === "homework" ||
+    kind === "tasca"
+  ) {
+    label = "TASCA";
+  }
+
+  if (
+    kind === "exam" ||
+    kind === "examen"
+  ) {
+    label = "EXAMEN";
+  }
+
+  if (
+    kind === "material"
+  ) {
+    label = "MATERIAL";
+  }
+
+  return `
+    <article
+      class="class-post card"
+    >
+
+      <div class="class-post-head">
+
+        <div class="post-avatar">
+          ${initials(
+            item.author_name ||
+            item.teacher_name ||
+            "M"
+          )}
+        </div>
+
+        <div>
+
+          <strong>
+            ${esc(
+              item.author_name ||
+              item.teacher_name ||
+              "Professor"
+            )}
+          </strong>
+
+          <small>
+            ${fmtDate(
+              item.created_at ||
+              item.date ||
+              item.event_date
+            )}
+          </small>
+
+        </div>
+
+        <span class="post-kind">
+          ${label}
+        </span>
+
+      </div>
+
+      <div class="class-post-content">
+
+        <h3>
+          ${esc(
+            item.title ||
+            item.name ||
+            "Sense títol"
+          )}
+        </h3>
+
+        ${
+          item.body ||
+          item.description
+            ? `
+              <p>
+                ${esc(
+                  item.body ||
+                  item.description
+                )}
+              </p>
+            `
+            : ""
+        }
+
+        ${
+          item.event_date
+            ? `
+              <div class="post-date">
+                <span>◷</span>
+
+                ${fullDate(
+                  item.event_date
+                )}
+              </div>
+            `
+            : ""
+        }
+
+        ${
+          item.due_date
+            ? `
+              <div class="post-date">
+                <span>◷</span>
+
+                Entrega:
+                ${fullDate(
+                  item.due_date
+                )}
+              </div>
+            `
+            : ""
+        }
+
+      </div>
+
+    </article>
+  `;
+}
+
+function studentsCount(
+  data
+) {
+
+  return (
+    data?.students?.length ||
+    data?.members?.length ||
+    0
+  );
+}
+
+
+/* ============================================================
+   TREBALL DE CLASSE
+============================================================ */
+
+function renderClassroomWork(
+  classroom,
+  work,
+  data
+) {
+
+  const body =
+    $("#classroom-body");
+
+  const isProfessor =
+    state.user?.role ===
+    "professor";
+
+  const assignments =
+    work.filter(
+      (item) => {
+
+        const kind =
+          String(
+            item.kind ||
+            item.type ||
+            ""
+          ).toLowerCase();
+
+        return (
+          kind === "homework" ||
+          kind === "tasca" ||
+          kind === "task" ||
+          !kind
+        );
+      }
+    );
+
+  const exams =
+    work.filter(
+      (item) => {
+
+        const kind =
+          String(
+            item.kind ||
+            item.type ||
+            ""
+          ).toLowerCase();
+
+        return (
+          kind === "exam" ||
+          kind === "examen"
+        );
+      }
+    );
+
+  body.innerHTML = `
+
+    <div class="class-work-layout">
+
+      <div class="class-work-main">
+
+        <div class="section-heading">
+
+          <div>
+
+            <span class="eyebrow">
+              TREBALL DE CLASSE
+            </span>
+
+            <h2>
+              Tasques i activitats
+            </h2>
+
+          </div>
+
+          ${
+            isProfessor
+              ? `
+                <button
+                  class="btn primary"
+                  id="new-class-work"
+                >
+                  ＋ Afegir
+                </button>
+              `
+              : ""
+          }
+
+        </div>
+
+        <div class="class-work-list">
+
+          ${
+            assignments.length
+              ? assignments
+                  .map(
+                    (item) =>
+                      renderWorkItem(
+                        item,
+                        "tasca"
+                      )
+                  )
+                  .join("")
+              : `
+                <div class="card empty-state">
+
+                  <span>□</span>
+
+                  <b>
+                    No hi ha tasques.
+                  </b>
+
+                  <small>
+                    Les activitats que publiqui
+                    el professor apareixeran aquí.
+                  </small>
+
+                </div>
+              `
+          }
+
+        </div>
+
+        <div
+          class="section-heading"
+          style="margin-top:28px"
+        >
+
+          <div>
+
+            <span class="eyebrow">
+              EXÀMENS
+            </span>
+
+            <h2>
+              Preparació
+            </h2>
+
+          </div>
+
+        </div>
+
+        <div class="class-work-list">
+
+          ${
+            exams.length
+              ? exams
+                  .map(
+                    (item) =>
+                      renderWorkItem(
+                        item,
+                        "examen"
+                      )
+                  )
+                  .join("")
+              : `
+                <div class="card empty-state">
+
+                  <span>□</span>
+
+                  <b>
+                    No hi ha exàmens publicats.
+                  </b>
+
+                </div>
+              `
+          }
+
+        </div>
+
+      </div>
+
+      <aside class="class-work-aside">
+
+        <div class="card">
+
+          <span class="eyebrow">
+            ORGANITZACIÓ
+          </span>
+
+          <h3>
+            Aquesta classe
+          </h3>
+
+          <div class="info-row">
+
+            <span>
+              Activitats
+            </span>
+
+            <strong>
+              ${assignments.length}
+            </strong>
+
+          </div>
+
+          <div class="info-row">
+
+            <span>
+              Exàmens
+            </span>
+
+            <strong>
+              ${exams.length}
+            </strong>
+
+          </div>
+
+        </div>
+
+      </aside>
+
+    </div>
+  `;
+
+  if (
+    $("#new-class-work")
+  ) {
+    $("#new-class-work").onclick =
+      () =>
+        openContentModal(
+          classroom.id,
+          "homework"
+        );
+  }
+}
+
+function renderWorkItem(
+  item,
+  type
+) {
+
+  const title =
+    item.title ||
+    item.name ||
+    "Activitat";
+
+  const date =
+    item.due_date ||
+    item.event_date ||
+    item.exam_date;
+
+  return `
+    <article
+      class="work-item card"
+    >
+
+      <div class="work-item-icon">
+        ${
+          type === "examen"
+            ? "E"
+            : "T"
+        }
+      </div>
+
+      <div class="work-item-main">
+
+        <span class="eyebrow">
+          ${
+            type === "examen"
+              ? "EXAMEN"
+              : "TASCA"
+          }
+        </span>
+
+        <h3>
+          ${esc(title)}
+        </h3>
+
+        ${
+          item.body ||
+          item.description
+            ? `
+              <p>
+                ${esc(
+                  item.body ||
+                  item.description
+                )}
+              </p>
+            `
+            : ""
+        }
+
+      </div>
+
+      <div class="work-item-date">
+
+        <small>
+          ${
+            type === "examen"
+              ? "Data"
+              : "Entrega"
+          }
+        </small>
+
+        <strong>
+          ${fmtDate(date)}
+        </strong>
+
+      </div>
+
+    </article>
+  `;
+}
+
+
+/* ============================================================
+   PERSONES
+============================================================ */
+
+function renderClassroomPeople(
+  classroom,
+  students,
+  data
+) {
+
+  const body =
+    $("#classroom-body");
+
+  const teacher =
+    classroom.teacher_name ||
+    classroom.teacher ||
+    "Professor";
+
+  body.innerHTML = `
+
+    <div class="people-page">
+
+      <div class="section-heading">
+
+        <div>
+
+          <span class="eyebrow">
+            PERSONES
+          </span>
+
+          <h2>
+            Participants de la classe
+          </h2>
+
+        </div>
+
+      </div>
+
+      <div class="people-group card">
+
+        <div class="people-group-head">
+
+          <h3>
+            Professor
+          </h3>
+
+          <span>
+            1
+          </span>
+
+        </div>
+
+        <div class="person-row">
+
+          <div class="person-avatar">
+            ${initials(
+              teacher
+            )}
+          </div>
+
+          <div>
+
+            <strong>
+              ${esc(
+                teacher
+              )}
+            </strong>
+
+            <small>
+              Professor de la classe
+            </small>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="people-group card">
+
+        <div class="people-group-head">
+
+          <h3>
+            Alumnes
+          </h3>
+
+          <span>
+            ${students.length}
+          </span>
+
+        </div>
+
+        ${
+          students.length
+            ? students
+                .map(
+                  (student) => {
+
+                    const name =
+                      student.name ||
+                      student.username ||
+                      student.email ||
+                      "Alumne";
+
+                    return `
+                      <div class="person-row">
+
+                        <div class="person-avatar">
+                          ${initials(name)}
+                        </div>
+
+                        <div>
+
+                          <strong>
+                            ${esc(name)}
+                          </strong>
+
+                          <small>
+                            Alumne
+                          </small>
+
+                        </div>
+
+                      </div>
+                    `;
+                  }
+                )
+                .join("")
+            : `
+              <div class="empty-state">
+
+                <span>◌</span>
+
+                <b>
+                  Encara no hi ha alumnes.
+                </b>
+
+                <small>
+                  Comparteix el codi
+                  ${esc(classroom.code)}
+                  perquè s'hi puguin unir.
+                </small>
+
+              </div>
+            `
+        }
+
+      </div>
+
+    </div>
+  `;
+}
+
+
+/* ============================================================
+   QUALIFICACIONS
+============================================================ */
+
+function renderClassroomGrades(
+  classroom,
+  grades,
+  data
+) {
+
+  const body =
+    $("#classroom-body");
+
+  const isProfessor =
+    state.user?.role ===
+    "professor";
+
+  if (!grades.length) {
+
+    body.innerHTML = `
+      <div class="card empty-state">
+
+        <span>◎</span>
+
+        <b>
+          Encara no hi ha qualificacions.
+        </b>
+
+        <small>
+          ${
+            isProfessor
+              ? "Quan hi hagi activitats qualificables, les podràs gestionar des d'aquí."
+              : "Les teves qualificacions apareixeran aquí quan el professor les publiqui."
+          }
+        </small>
+
+      </div>
+    `;
+
+    return;
+  }
+
+  body.innerHTML = `
+
+    <div class="grades-page">
+
+      <div class="section-heading">
+
+        <div>
+
+          <span class="eyebrow">
+            QUALIFICACIONS
+          </span>
+
+          <h2>
+            Resultats
+          </h2>
+
+        </div>
+
+      </div>
+
+      <div class="card grades-table">
+
+        <div class="grades-row grades-head">
+
+          <span>
+            Activitat
+          </span>
+
+          <span>
+            Data
+          </span>
+
+          <span>
+            Nota
+          </span>
+
+        </div>
+
+        ${
+          grades
+            .map(
+              (grade) => `
+                <div class="grades-row">
+
+                  <strong>
+                    ${esc(
+                      grade.title ||
+                      grade.name ||
+                      "Activitat"
+                    )}
+                  </strong>
+
+                  <span>
+                    ${fmtDate(
+                      grade.date ||
+                      grade.due_date
+                    )}
+                  </span>
+
+                  <strong>
+                    ${
+                      grade.score ??
+                      "—"
+                    }
+                  </strong>
+
+                </div>
+              `
+            )
+            .join("")
+        }
+
+      </div>
+
+    </div>
+  `;
+}
+
+/* ============================================================
    PUBLICAR CONTINGUT A LA CLASSE
 ============================================================ */
 
-function openContentModal(
-  classId
-) {
-  const root =
-    $("#modal-root");
+function openContentModal(classId) {
+  const root = $("#modal-root");
+
+  if (!root) return;
 
   root.innerHTML = `
     <div class="modal-backdrop">
@@ -2536,6 +3244,7 @@ function openContentModal(
           <button
             class="close"
             data-close
+            type="button"
           >
             ×
           </button>
@@ -2550,9 +3259,8 @@ function openContentModal(
           <label>
             Tipus
 
-            <select
-              name="kind"
-            >
+            <select name="kind">
+
               <option value="deures">
                 Deures
               </option>
@@ -2564,6 +3272,7 @@ function openContentModal(
               <option value="avis">
                 Avís
               </option>
+
             </select>
           </label>
 
@@ -2611,6 +3320,7 @@ function openContentModal(
             </button>
 
             <button
+              type="submit"
               class="btn primary"
             >
               Publicar
@@ -2628,28 +3338,41 @@ function openContentModal(
   $$("[data-close]", root)
     .forEach(
       (button) => {
-        button.onclick =
-          () =>
-            root.innerHTML = "";
+
+        button.onclick = () => {
+          root.innerHTML = "";
+        };
+
       }
     );
 
-  $("#content-form").onsubmit =
+  const form =
+    $("#content-form", root);
+
+  if (!form) return;
+
+  form.onsubmit =
     async (event) => {
+
       event.preventDefault();
 
       try {
+
+        const payload =
+          Object.fromEntries(
+            new FormData(
+              event.target
+            ).entries()
+          );
+
         await api(
           `/api/classes/${classId}/content`,
           {
             method: "POST",
-            body: JSON.stringify(
-              Object.fromEntries(
-                new FormData(
-                  event.target
-                ).entries()
+            body:
+              JSON.stringify(
+                payload
               )
-            )
           }
         );
 
@@ -2664,8 +3387,13 @@ function openContentModal(
         );
 
       } catch (error) {
-        showToastFromError(error);
+
+        showToastFromError(
+          error
+        );
+
       }
+
     };
 }
 
@@ -2675,6 +3403,7 @@ function openContentModal(
 ============================================================ */
 
 function weekStart() {
+
   const date =
     new Date();
 
@@ -2698,6 +3427,7 @@ function weekStart() {
 }
 
 function renderPlanner() {
+
   const start =
     weekStart();
 
@@ -2720,32 +3450,48 @@ function renderPlanner() {
 
   state.tasks.forEach(
     (task) => {
+
       if (task.due_date) {
+
         items.push({
           date:
             task.due_date,
-          type: "task",
+
+          type:
+            "task",
+
           title:
             task.name,
+
           sub:
             `${task.estimated_minutes || 30} min`
         });
+
       }
+
     }
   );
 
   state.exams.forEach(
     (exam) => {
+
       items.push({
+
         date:
           exam.exam_date,
-        type: "exam",
+
+        type:
+          "exam",
+
         title:
           "Examen · " +
           exam.subject,
+
         sub:
           "Preparació"
+
       });
+
     }
   );
 
@@ -2776,7 +3522,8 @@ function renderPlanner() {
           const dayItems =
             items.filter(
               (item) =>
-                item.date === iso
+                item.date ===
+                iso
             );
 
           return `
@@ -2808,6 +3555,7 @@ function renderPlanner() {
                       <div
                         class="plan-item ${item.type}"
                       >
+
                         ${esc(
                           item.title
                         )}
@@ -2817,6 +3565,7 @@ function renderPlanner() {
                             item.sub
                           )}
                         </small>
+
                       </div>
                     `
                   )
@@ -2826,35 +3575,47 @@ function renderPlanner() {
 
             </div>
           `;
+
         }
       )
       .join("");
 
   if ($("#week-title")) {
+
     $("#week-title").textContent =
       state.weekOffset === 0
+
         ? "Aquesta setmana"
+
         : state.weekOffset > 0
-          ? `D'aquí a ${state.weekOffset} setmana${
+
+          ? `D'aquí a ${
+              state.weekOffset
+            } setmana${
               state.weekOffset > 1
                 ? "es"
                 : ""
             }`
-          : `Fa ${Math.abs(
-              state.weekOffset
-            )} setmana${
+
+          : `Fa ${
+              Math.abs(
+                state.weekOffset
+              )
+            } setmana${
               Math.abs(
                 state.weekOffset
               ) > 1
                 ? "es"
                 : ""
             }`;
+
   }
 
   renderPlanSessions();
 }
 
 function renderPlanSessions() {
+
   const box =
     $("#plan-sessions");
 
@@ -2880,6 +3641,7 @@ function renderPlanSessions() {
 
   box.innerHTML =
     pending.length
+
       ? pending
           .map(
             (task) => `
@@ -2892,11 +3654,13 @@ function renderPlanSessions() {
                 </b>
 
                 <small>
+
                   ${esc(
                     task.subject || ""
                   )}
 
                   · proposta de
+
                   ${Math.min(
                     50,
                     Math.max(
@@ -2908,33 +3672,42 @@ function renderPlanSessions() {
                   min
 
                   ·
+
                   ${fmtDate(
                     task.due_date
                   )}
+
                 </small>
 
               </div>
             `
           )
           .join("")
+
       : `
         <div
           class="empty-state"
           style="min-height:150px"
         >
+
           <span>✓</span>
+
           <b>
             Cap sessió pendent.
           </b>
+
           <small>
             Gaudeix del marge.
           </small>
+
         </div>
       `;
 }
 
 async function generatePlan() {
+
   try {
+
     await renderRecommendations(
       false
     );
@@ -2948,7 +3721,11 @@ async function generatePlan() {
     );
 
   } catch (error) {
-    showToastFromError(error);
+
+    showToastFromError(
+      error
+    );
+
   }
 }
 
@@ -2958,272 +3735,364 @@ async function generatePlan() {
 ============================================================ */
 
 async function loadProgress() {
+
   try {
+
     const data =
       await api(
         "/api/progress"
       );
 
-    const tasks =
-      data.tasks || {};
-
-    const study =
-      data.study || {};
-
-    const percentage =
-      tasks.total
-        ? Math.round(
-            tasks.completed *
-            100 /
-            tasks.total
-          )
-        : 0;
-
-    if ($("#progress-number"))
-      $("#progress-number").textContent =
-        percentage + "%";
-
-    if ($("#progress-bar"))
-      $("#progress-bar").style.width =
-        percentage + "%";
-
-    if ($("#progress-caption"))
-      $("#progress-caption").textContent =
-        `${tasks.completed || 0} de ${
-          tasks.total || 0
-        } tasques`;
-
-    const planned =
-      Number(
-        study.planned_minutes ??
-        data.planned_minutes ??
-        0
-      );
-
-    const completed =
-      Number(
-        study.completed_minutes ??
-        data.study_minutes ??
-        0
-      );
-
-    const studyPercentage =
-      planned
-        ? Math.min(
-            100,
-            Math.round(
-              completed *
-              100 /
-              planned
-            )
-          )
-        : 0;
-
-    if ($("#study-number"))
-      $("#study-number").textContent =
-        completed + " min";
-
-    if ($("#study-bar"))
-      $("#study-bar").style.width =
-        studyPercentage + "%";
-
-    if ($("#study-caption"))
-      $("#study-caption").textContent =
-        `${completed} min completats de ${planned} planificats`;
-
-    const week =
-      data.week || [];
-
-    const map = {};
-
-    week.forEach(
-      (item) => {
-        map[
-          String(
-            item.session_date
-          ).slice(5)
-        ] =
-          Number(
-            item.completed_minutes ??
-            item.minutes ??
-            0
-          );
-      }
+    renderProgress(
+      data
     );
 
-    const names = [
-      "Dl",
-      "Dt",
-      "Dc",
-      "Dj",
-      "Dv",
-      "Ds",
-      "Dg"
-    ];
+  } catch (error) {
 
-    const values =
-      names.map(
-        (name, index) => {
+    showToastFromError(
+      error
+    );
 
-          const date =
-            new Date();
+  }
+}
 
-          date.setDate(
-            date.getDate() -
-              (
-                (date.getDay() + 6) %
-                7
-              ) +
-              index
-          );
+/* ============================================================
+   PROGRÉS
+============================================================ */
 
-          return {
-            name,
-            value:
-              map[
-                date
-                  .toISOString()
-                  .slice(5, 10)
-              ] || 0
-          };
-        }
-      );
+function renderProgress(data) {
 
-    const max =
-      Math.max(
-        30,
-        ...values.map(
-          (item) =>
-            item.value
+  const tasks =
+    data.tasks ||
+    data.progress?.tasks ||
+    {};
+
+  const study =
+    data.study ||
+    data.progress?.study ||
+    {};
+
+  const tests =
+    data.tests ||
+    data.progress?.tests ||
+    {};
+
+  const totalTasks =
+    Number(
+      tasks.total ??
+      data.total_tasks ??
+      0
+    );
+
+  const completedTasks =
+    Number(
+      tasks.completed ??
+      data.completed_tasks ??
+      0
+    );
+
+  const taskProgress =
+    totalTasks > 0
+      ? Math.round(
+          completedTasks /
+          totalTasks *
+          100
         )
-      );
+      : 0;
 
-    if ($("#progress-chart")) {
-      $("#progress-chart").innerHTML =
-        values
+  const studyMinutes =
+    Number(
+      study.minutes ??
+      study.study_minutes ??
+      data.study_minutes ??
+      0
+    );
+
+  const testsCompleted =
+    Number(
+      tests.completed ??
+      tests.total ??
+      0
+    );
+
+  if ($("#progress-task-value")) {
+    $("#progress-task-value")
+      .textContent =
+      taskProgress + "%";
+  }
+
+  if ($("#progress-task-detail")) {
+    $("#progress-task-detail")
+      .textContent =
+      `${completedTasks} de ${totalTasks} tasques completades`;
+  }
+
+  if ($("#progress-study-value")) {
+    $("#progress-study-value")
+      .textContent =
+      studyMinutes + " min";
+  }
+
+  if ($("#progress-test-value")) {
+    $("#progress-test-value")
+      .textContent =
+      testsCompleted;
+  }
+
+  const week =
+    data.weekly ||
+    data.week ||
+    [];
+
+  const weekBox =
+    $("#progress-week");
+
+  if (weekBox) {
+
+    if (
+      Array.isArray(week) &&
+      week.length
+    ) {
+
+      weekBox.innerHTML =
+        week
           .map(
-            (item) => `
-              <div class="bar-col">
+            (day) => `
+              <div class="progress-day">
+
+                <span>
+                  ${esc(
+                    day.label ||
+                    day.day ||
+                    ""
+                  )}
+                </span>
 
                 <div
-                  class="bar"
-                  style="
-                    height:${Math.max(
-                      3,
-                      item.value /
-                      max *
-                      100
-                    )}%
-                  "
-                ></div>
+                  class="progress-bar"
+                >
+                  <i
+                    style="
+                      width:${Math.min(
+                        100,
+                        Number(
+                          day.percent ||
+                          day.progress ||
+                          0
+                        )
+                      )}%
+                    "
+                  ></i>
+                </div>
 
-                <small>
-                  ${item.name}
-                </small>
+                <strong>
+                  ${
+                    day.minutes ??
+                    day.value ??
+                    0
+                  }
+                </strong>
 
               </div>
             `
           )
           .join("");
+
+    } else {
+
+      weekBox.innerHTML = `
+        <div class="empty-state">
+
+          <span>◷</span>
+
+          <b>
+            Encara no hi ha dades setmanals.
+          </b>
+
+          <small>
+            Quan estudiïs o completis
+            tasques, aquesta gràfica
+            començarà a mostrar el teu ritme.
+          </small>
+
+        </div>
+      `;
+
     }
+  }
 
-    const tests =
-      data.tests ||
-      [];
+  const summary =
+    $("#progress-summary");
 
-    if ($("#test-history")) {
-      $("#test-history").innerHTML =
-        tests.length
-          ? tests
-              .map(
-                (test) => `
-                  <div class="test-row">
-                    <span>
-                      ${esc(
-                        test.topic ||
-                        test.subject ||
-                        "Test"
-                      )}
-                    </span>
+  if (summary) {
 
-                    <span class="test-score">
-                      ${test.score}/${test.total}
-                    </span>
-                  </div>
-                `
-              )
-              .join("")
-          : `
-            <p
-              class="muted"
-              style="font-size:10px"
-            >
-              Encara no has completat
-              cap test.
-            </p>
-          `;
-    }
+    summary.innerHTML = `
 
-  } catch (error) {
-    showToastFromError(error);
+      <div class="progress-summary-item">
+
+        <span>
+          Tasques
+        </span>
+
+        <strong>
+          ${completedTasks}
+          /
+          ${totalTasks}
+        </strong>
+
+      </div>
+
+      <div class="progress-summary-item">
+
+        <span>
+          Temps d'estudi
+        </span>
+
+        <strong>
+          ${studyMinutes}
+          min
+        </strong>
+
+      </div>
+
+      <div class="progress-summary-item">
+
+        <span>
+          Tests
+        </span>
+
+        <strong>
+          ${testsCompleted}
+        </strong>
+
+      </div>
+
+    `;
+
   }
 }
 
 
 /* ============================================================
-   IA CHAT
+   IA D'ESTUDI — XAT
 ============================================================ */
 
-function addChat(
+function setAiMode(mode) {
+
+  state.aiMode =
+    mode;
+
+  $$("[data-ai-mode]")
+    .forEach(
+      (button) => {
+
+        button.classList.toggle(
+          "active",
+          button.dataset.aiMode ===
+            mode
+        );
+
+      }
+    );
+
+  const labels = {
+
+    DUBTE:
+      "Pregunta'm qualsevol dubte.",
+
+    EXPLICAR:
+      "Escriu el tema que vols entendre.",
+
+    ESTUDIAR:
+      "Digues què has d'estudiar.",
+
+    RESUMIR:
+      "Enganxa el text que vols resumir.",
+
+    TEST:
+      "Indica el tema del test."
+
+  };
+
+  if ($("#ai-input")) {
+
+    $("#ai-input").placeholder =
+      labels[mode] ||
+      labels.DUBTE;
+
+  }
+}
+
+function addAiMessage(
   role,
-  text
+  content
 ) {
+
+  const box =
+    $("#ai-messages");
+
+  if (!box) return;
+
   const element =
     document.createElement(
       "div"
     );
 
   element.className =
-    "chat-bubble " +
-    role;
+    `ai-message ${role}`;
 
   element.innerHTML = `
-    <span class="bubble-icon">
+
+    <div class="ai-message-avatar">
       ${
-        role === "ai"
-          ? "✦"
-          : "●"
+        role === "user"
+          ? initials(
+              state.user?.name
+            )
+          : "✦"
       }
-    </span>
-
-    <div>
-
-      <b>
-        ${
-          role === "ai"
-            ? "MiniClassroom IA"
-            : "Tu"
-        }
-      </b>
-
-      <p>
-        ${esc(text)}
-      </p>
-
     </div>
+
+    <div class="ai-message-content">
+      ${formatAiText(
+        content
+      )}
+    </div>
+
   `;
 
-  $("#chat-log")?.appendChild(
+  box.appendChild(
     element
   );
 
-  if ($("#chat-log")) {
-    $("#chat-log").scrollTop =
-      $("#chat-log").scrollHeight;
-  }
+  box.scrollTop =
+    box.scrollHeight;
 }
 
-async function sendAI() {
+function formatAiText(
+  text
+) {
+
+  let value =
+    esc(text || "");
+
+  value =
+    value.replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong>$1</strong>"
+    );
+
+  value =
+    value.replace(
+      /\n/g,
+      "<br>"
+    );
+
+  return value;
+}
+
+async function sendAiMessage() {
+
   const input =
     $("#ai-input");
 
@@ -3234,65 +4103,224 @@ async function sendAI() {
 
   if (!message) return;
 
-  input.value = "";
-
-  addChat(
+  addAiMessage(
     "user",
     message
   );
 
-  const loading =
+  input.value = "";
+
+  const button =
+    $("#ai-send");
+
+  if (button) {
+    button.disabled = true;
+  }
+
+  const typing =
     document.createElement(
       "div"
     );
 
-  loading.className =
-    "chat-bubble ai";
+  typing.className =
+    "ai-message assistant";
 
-  loading.innerHTML = `
-    <span class="bubble-icon">
+  typing.innerHTML = `
+
+    <div class="ai-message-avatar">
       ✦
-    </span>
-
-    <div>
-      <b>
-        MiniClassroom IA
-      </b>
-
-      <p>
-        Estic pensant...
-      </p>
     </div>
+
+    <div
+      class="ai-message-content"
+    >
+      <span class="ai-typing">
+        Pensant...
+      </span>
+    </div>
+
   `;
 
-  $("#chat-log")?.appendChild(
-    loading
+  const box =
+    $("#ai-messages");
+
+  box?.appendChild(
+    typing
   );
 
+  if (box) {
+    box.scrollTop =
+      box.scrollHeight;
+  }
+
   try {
+
     const data =
       await api(
         "/api/ai",
         {
           method: "POST",
-          body: JSON.stringify({
-            mode:
-              state.aiMode,
-            message
-          })
+
+          body:
+            JSON.stringify({
+              mode:
+                state.aiMode,
+
+              message,
+
+              context: {
+                tasks:
+                  state.tasks,
+
+                exams:
+                  state.exams,
+
+                classes:
+                  state.classes
+              }
+            })
         }
       );
 
-    loading.remove();
+    typing.remove();
 
-    addChat(
-      "ai",
+    addAiMessage(
+      "assistant",
       data.answer ||
-        "No he pogut generar una resposta."
+      data.response ||
+      "No he rebut cap resposta."
     );
 
   } catch (error) {
-    loading.remove();
+
+    typing.remove();
+
+    addAiMessage(
+      "assistant",
+      "No he pogut processar la consulta. Torna-ho a provar."
+    );
+
+    showToastFromError(
+      error
+    );
+
+  } finally {
+
+    if (button) {
+      button.disabled = false;
+    }
+
+  }
+}
+
+
+/* ============================================================
+   TESTS GENERATS PER IA
+============================================================ */
+
+async function generateTest() {
+
+  const topicInput =
+    $("#test-topic");
+
+  const topic =
+    topicInput?.value.trim() ||
+    "";
+
+  if (!topic) {
+
+    toast(
+      "Escriu un tema per generar el test.",
+      true
+    );
+
+    topicInput?.focus();
+
+    return;
+  }
+
+  const container =
+    $("#test-container");
+
+  if (!container) return;
+
+  container.innerHTML = `
+
+    <div class="card empty-state">
+
+      <span>
+        ✦
+      </span>
+
+      <b>
+        Preparant el test...
+      </b>
+
+      <small>
+        La IA està creant 5 preguntes
+        sobre ${esc(topic)}.
+      </small>
+
+    </div>
+
+  `;
+
+  try {
+
+    const data =
+      await api(
+        "/api/ai/test",
+        {
+          method: "POST",
+
+          body:
+            JSON.stringify({
+              topic,
+
+              subject:
+                $("#test-subject")
+                  ?.value || "",
+
+              difficulty:
+                $("#test-difficulty")
+                  ?.value ||
+                "mitjana"
+            })
+        }
+      );
+
+    const questions =
+      data.questions ||
+      data.test?.questions ||
+      [];
+
+    renderTest(
+      questions,
+      topic
+    );
+
+  } catch (error) {
+
+    container.innerHTML = `
+
+      <div class="card empty-state">
+
+        <span>!</span>
+
+        <b>
+          No s'ha pogut generar el test.
+        </b>
+
+        <small>
+          ${esc(
+            error.message ||
+            "Error intern."
+          )}
+        </small>
+
+      </div>
+
+    `;
 
     showToastFromError(
       error
@@ -3300,724 +4328,1079 @@ async function sendAI() {
   }
 }
 
+function renderTest(
+  questions,
+  topic
+) {
 
-/* ============================================================
-   TEST IA
-============================================================ */
+  const container =
+    $("#test-container");
 
-async function openTest() {
-  const root =
-    $("#modal-root");
+  if (!container) return;
 
-  root.innerHTML = `
-    <div class="modal-backdrop">
+  if (!questions.length) {
 
-      <div class="modal">
+    container.innerHTML = `
+      <div class="card empty-state">
 
-        <div class="modal-head">
+        <span>□</span>
 
-          <h3>
-            Crear un test
-          </h3>
+        <b>
+          No s'han generat preguntes.
+        </b>
 
-          <button
-            class="close"
-            data-close
-          >
-            ×
-          </button>
+        <small>
+          Prova amb un altre tema.
+        </small>
+
+      </div>
+    `;
+
+    return;
+  }
+
+  container.innerHTML = `
+
+    <form
+      id="test-form"
+      class="test-form"
+    >
+
+      <div class="test-header">
+
+        <div>
+
+          <span class="eyebrow">
+            TEST IA
+          </span>
+
+          <h2>
+            ${esc(topic)}
+          </h2>
 
         </div>
 
-        <form
-          id="test-start"
-          class="form-grid"
-        >
-
-          <label>
-            Tema
-
-            <input
-              name="topic"
-              required
-              placeholder="Revolució Industrial"
-            >
-          </label>
-
-          <div class="modal-actions">
-
-            <button
-              type="button"
-              class="btn"
-              data-close
-            >
-              Cancel·lar
-            </button>
-
-            <button
-              class="btn primary"
-            >
-              Generar 5 preguntes
-            </button>
-
-          </div>
-
-        </form>
+        <span>
+          ${questions.length}
+          preguntes
+        </span>
 
       </div>
 
-    </div>
-  `;
+      ${questions
+        .map(
+          (question, index) => {
 
-  $$("[data-close]", root)
-    .forEach(
-      (button) => {
-        button.onclick =
-          () =>
-            root.innerHTML = "";
-      }
-    );
+            const options =
+              question.options ||
+              question.answers ||
+              [];
 
-  $("#test-start").onsubmit =
-    async (event) => {
-      event.preventDefault();
+            return `
 
-      const topic =
-        new FormData(
-          event.target
-        ).get("topic");
+              <article
+                class="test-question card"
+              >
 
-      try {
-        const data =
-          await api(
-            "/api/ai/test",
-            {
-              method: "POST",
-              body: JSON.stringify({
-                topic
-              })
-            }
-          );
-
-        renderTestModal(
-          data.test
-        );
-
-      } catch (error) {
-        showToastFromError(
-          error
-        );
-      }
-    };
-}
-
-function renderTestModal(
-  test
-) {
-  const root =
-    $("#modal-root");
-
-  const questions =
-    test.questions || [];
-
-  root.innerHTML = `
-    <div class="modal-backdrop">
-
-      <div class="modal">
-
-        <div class="modal-head">
-
-          <h3>
-            Test ·
-            ${esc(
-              test.topic
-            )}
-          </h3>
-
-          <button
-            class="close"
-            data-close
-          >
-            ×
-          </button>
-
-        </div>
-
-        <div id="test-questions">
-
-          ${questions
-            .map(
-              (question, index) => `
                 <div
-                  class="test-question"
-                  data-q="${index}"
+                  class="question-number"
+                >
+                  ${index + 1}
+                </div>
+
+                <h3>
+                  ${esc(
+                    question.question ||
+                    question.text ||
+                    ""
+                  )}
+                </h3>
+
+                <div
+                  class="question-options"
                 >
 
-                  <p>
-                    ${index + 1}.
-                    ${esc(
-                      question.question
-                    )}
-                  </p>
-
-                  ${question.options
+                  ${options
                     .map(
-                      (option, optionIndex) => `
-                        <button
-                          class="test-option"
-                          data-opt="${index}-${optionIndex}"
-                        >
-                          ${
-                            String.fromCharCode(
-                              65 +
-                              optionIndex
-                            )
-                          }
-                          ·
-                          ${esc(option)}
-                        </button>
-                      `
+                      (option, optionIndex) => {
+
+                        const letter =
+                          String.fromCharCode(
+                            65 +
+                            optionIndex
+                          );
+
+                        const value =
+                          typeof option ===
+                          "string"
+                            ? option
+                            : option.text ||
+                              option.answer ||
+                              "";
+
+                        return `
+
+                          <label
+                            class="test-option"
+                          >
+
+                            <input
+                              type="radio"
+                              name="q-${index}"
+                              value="${esc(
+                                letter
+                              )}"
+                              required
+                            >
+
+                            <span
+                              class="option-letter"
+                            >
+                              ${letter}
+                            </span>
+
+                            <span>
+                              ${esc(
+                                value
+                              )}
+                            </span>
+
+                          </label>
+
+                        `;
+
+                      }
                     )
                     .join("")}
 
                 </div>
-              `
-            )
-            .join("")}
 
-        </div>
+              </article>
 
-        <div class="modal-actions">
+            `;
 
-          <button
-            class="btn primary"
-            id="grade-test"
-          >
-            Corregir test
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-  `;
-
-  $$("[data-close]", root)
-    .forEach(
-      (button) => {
-        button.onclick =
-          () =>
-            root.innerHTML = "";
-      }
-    );
-
-  const answers = {};
-
-  $$("[data-opt]", root)
-    .forEach(
-      (button) => {
-        button.onclick =
-          () => {
-
-            const [
-              questionIndex,
-              optionIndex
-            ] =
-              button.dataset.opt
-                .split("-")
-                .map(Number);
-
-            answers[
-              questionIndex
-            ] =
-              optionIndex;
-
-            $$(
-              `[data-q="${questionIndex}"] .test-option`,
-              root
-            ).forEach(
-              (option) =>
-                option.classList.remove(
-                  "selected"
-                )
-            );
-
-            button.classList.add(
-              "selected"
-            );
-          };
-      }
-    );
-
-  $("#grade-test").onclick =
-    async () => {
-
-      let score = 0;
-
-      questions.forEach(
-        (question, index) => {
-          if (
-            answers[index] ===
-            question.answer
-          ) {
-            score++;
           }
-        }
-      );
+        )
+        .join("")}
 
-      questions.forEach(
-        (question, index) => {
-
-          $$(
-            `[data-q="${index}"] .test-option`,
-            root
-          ).forEach(
-            (button, optionIndex) => {
-
-              if (
-                optionIndex ===
-                question.answer
-              ) {
-                button.classList.add(
-                  "selected"
-                );
-              }
-
-            }
-          );
-        }
-      );
-
-      $("#grade-test").disabled =
-        true;
-
-      $("#grade-test").textContent =
-        "Resultat";
-
-      const result =
-        document.createElement(
-          "div"
-        );
-
-      result.className =
-        "test-result";
-
-      result.innerHTML = `
-        <strong>
-          ${score}/${questions.length}
-        </strong>
-
-        <p>
-          Has encertat
-          ${score}
-          de
-          ${questions.length}
-          preguntes.
-        </p>
+      <div
+        class="test-submit"
+      >
 
         <button
           class="btn primary"
-          id="save-test-result"
+          type="submit"
         >
-          Guardar resultat
+          Corregir test
         </button>
-      `;
 
-      root
-        .querySelector(
-          ".modal"
-        )
-        .appendChild(result);
+      </div>
 
-      $("#save-test-result").onclick =
-        async () => {
+    </form>
+  `;
 
-          try {
+  $("#test-form").onsubmit =
+    async (event) => {
+
+      event.preventDefault();
+
+      const form =
+        new FormData(
+          event.target
+        );
+
+      const answers =
+        questions.map(
+          (_, index) =>
+            form.get(
+              `q-${index}`
+            )
+        );
+
+      try {
+
+        const result =
+          await api(
+            "/api/test-results",
+            {
+              method: "POST",
+
+              body:
+                JSON.stringify({
+                  topic,
+                  answers,
+                  questions
+                })
+            }
+          );
+
+        renderTestResult(
+          result,
+          questions
+        );
+
+      } catch (error) {
+
+        /*
+         * Compatibilitat amb versions
+         * anteriors del backend.
+         */
+        try {
+
+          const result =
             await api(
-              "/api/test-results",
+              "/api/tests/result",
               {
                 method: "POST",
-                body: JSON.stringify({
-                  topic:
-                    test.topic,
-                  score,
-                  total:
-                    questions.length
-                })
+
+                body:
+                  JSON.stringify({
+                    topic,
+                    answers,
+                    questions
+                  })
               }
             );
 
-            toast(
-              "Resultat guardat al teu progrés."
-            );
+          renderTestResult(
+            result,
+            questions
+          );
 
-            root.innerHTML = "";
+        } catch (secondError) {
 
-          } catch (error) {
-            showToastFromError(
-              error
-            );
-          }
-        };
+          showToastFromError(
+            secondError
+          );
+
+        }
+
+      }
+
+    };
+}
+
+function renderTestResult(
+  result,
+  questions
+) {
+
+  const container =
+    $("#test-container");
+
+  if (!container) return;
+
+  const score =
+    Number(
+      result.score ??
+      result.correct ??
+      0
+    );
+
+  const total =
+    Number(
+      result.total ??
+      questions.length
+    );
+
+  const percent =
+    total
+      ? Math.round(
+          score /
+          total *
+          100
+        )
+      : 0;
+
+  container.innerHTML = `
+
+    <div class="test-result card">
+
+      <span class="eyebrow">
+        RESULTAT
+      </span>
+
+      <div class="test-score">
+        ${percent}%
+      </div>
+
+      <h2>
+        ${score}
+        de
+        ${total}
+        correctes
+      </h2>
+
+      <p>
+        ${
+          result.message ||
+          (
+            percent >= 80
+              ? "Molt bé. Continua practicant per consolidar-ho."
+              : percent >= 50
+                ? "Bon punt de partida. Repassa els conceptes que han costat més."
+                : "Val la pena tornar a repassar el tema abans de fer un altre test."
+          )
+        }
+      </p>
+
+      <button
+        class="btn secondary"
+        id="new-test"
+      >
+        Fer un altre test
+      </button>
+
+    </div>
+
+  `;
+
+  $("#new-test").onclick =
+    () => {
+
+      container.innerHTML = "";
+
+      $("#test-topic")
+        ?.focus();
+
     };
 }
 
 
 /* ============================================================
-   RECOMANACIONS
+   PERFIL
 ============================================================ */
 
-function openReco() {
-  navigate(
-    "dashboard"
-  );
+function renderProfile() {
 
-  renderRecommendations(
-    true
-  );
+  if (!state.user) return;
+
+  const name =
+    state.user.name ||
+    state.user.username ||
+    "Alumne";
+
+  if ($("#profile-name"))
+    $("#profile-name")
+      .textContent = name;
+
+  if ($("#profile-email"))
+    $("#profile-email")
+      .textContent =
+      state.user.email || "";
+
+  if ($("#profile-role"))
+    $("#profile-role")
+      .textContent =
+      state.user.role ===
+      "professor"
+        ? "Professor"
+        : "Alumne";
+
+  if ($("#profile-avatar"))
+    $("#profile-avatar")
+      .textContent =
+      initials(name);
+
+  if ($("#profile-created"))
+    $("#profile-created")
+      .textContent =
+      state.user.created_at
+        ? fmtDate(
+            state.user.created_at
+          )
+        : "—";
 }
 
 
 /* ============================================================
-   AUTENTICACIÓ
+   CALENDARI
 ============================================================ */
 
-function bindAuth() {
+function renderCalendar() {
 
-  $$(".auth-tab")
+  const box =
+    $("#calendar-grid");
+
+  if (!box) return;
+
+  const now =
+    new Date();
+
+  const year =
+    now.getFullYear();
+
+  const month =
+    now.getMonth();
+
+  const first =
+    new Date(
+      year,
+      month,
+      1
+    );
+
+  const last =
+    new Date(
+      year,
+      month + 1,
+      0
+    );
+
+  const startDay =
+    (
+      first.getDay() +
+      6
+    ) % 7;
+
+  const total =
+    last.getDate();
+
+  const today =
+    now.getDate();
+
+  let html = "";
+
+  for (
+    let i = 0;
+    i < startDay;
+    i++
+  ) {
+
+    html += `
+      <div class="calendar-cell muted">
+      </div>
+    `;
+
+  }
+
+  for (
+    let day = 1;
+    day <= total;
+    day++
+  ) {
+
+    const iso =
+      `${year}-${String(
+        month + 1
+      ).padStart(2, "0")}-${String(
+        day
+      ).padStart(2, "0")}`;
+
+    const dayTasks =
+      state.tasks.filter(
+        (task) =>
+          task.due_date ===
+          iso
+      );
+
+    const dayExams =
+      state.exams.filter(
+        (exam) =>
+          exam.exam_date ===
+          iso
+      );
+
+    html += `
+
+      <div
+        class="calendar-cell ${
+          day === today
+            ? "today"
+            : ""
+        }"
+      >
+
+        <span>
+          ${day}
+        </span>
+
+        ${
+          dayTasks.length
+            ? `
+              <i
+                class="calendar-task-dot"
+                title="${
+                  dayTasks.length
+                } tasques"
+              >
+                ${dayTasks.length}
+              </i>
+            `
+            : ""
+        }
+
+        ${
+          dayExams.length
+            ? `
+              <i
+                class="calendar-exam-dot"
+                title="${
+                  dayExams.length
+                } exàmens"
+              >
+                E
+              </i>
+            `
+            : ""
+        }
+
+      </div>
+
+    `;
+
+  }
+
+  box.innerHTML =
+    html;
+
+  if ($("#calendar-month")) {
+
+    $("#calendar-month")
+      .textContent =
+      now.toLocaleDateString(
+        "ca-ES",
+        {
+          month: "long",
+          year: "numeric"
+        }
+      );
+
+  }
+}
+
+/* ============================================================
+   FILTRES DE TASQUES
+============================================================ */
+
+function bindTaskFilters() {
+
+  $$("[data-task-filter]")
     .forEach(
       (button) => {
 
-        button.onclick =
-          () => {
+        button.onclick = () => {
 
-            $$(".auth-tab")
-              .forEach(
-                (tab) =>
-                  tab.classList.remove(
-                    "active"
-                  )
-              );
+          state.taskFilter =
+            button.dataset.taskFilter;
 
-            button.classList.add(
-              "active"
+          $$("[data-task-filter]")
+            .forEach(
+              (item) =>
+                item.classList.toggle(
+                  "active",
+                  item.dataset.taskFilter ===
+                    state.taskFilter
+                )
             );
 
-            const register =
-              button.dataset.auth ===
-              "register";
+          renderTasks();
 
-            $("#login-form")
-              ?.classList.toggle(
-                "hidden",
-                register
-              );
+        };
 
-            $("#register-form")
-              ?.classList.toggle(
-                "hidden",
-                !register
-              );
-
-            if ($("#auth-message")) {
-              $("#auth-message").textContent =
-                "";
-            }
-          };
       }
     );
 
-  $("#login-form").onsubmit =
-    async (event) => {
+  const search =
+    $("#task-search");
 
-      event.preventDefault();
+  if (search) {
 
-      if ($("#auth-message")) {
-        $("#auth-message").textContent =
-          "";
-      }
+    search.oninput = () => {
 
-      try {
-        const data =
-          await api(
-            "/api/login",
-            {
-              method: "POST",
-              body: JSON.stringify(
-                Object.fromEntries(
-                  new FormData(
-                    event.target
-                  ).entries()
-                )
-              )
-            }
-          );
+      state.taskSearch =
+        search.value;
 
-        setUser(
-          data.user
-        );
+      renderTasks();
 
-        $("#auth-view")
-          ?.classList.add(
-            "hidden"
-          );
-
-        $("#app-view")
-          ?.classList.remove(
-            "hidden"
-          );
-
-        await loadDashboard();
-
-        toast(
-          "Benvingut/da a MiniClassroom."
-        );
-
-      } catch (error) {
-
-        if ($("#auth-message")) {
-          $("#auth-message").textContent =
-            error.message;
-        }
-      }
     };
 
-  $("#register-form").onsubmit =
-    async (event) => {
-
-      event.preventDefault();
-
-      try {
-
-        await api(
-          "/api/register",
-          {
-            method: "POST",
-            body: JSON.stringify(
-              Object.fromEntries(
-                new FormData(
-                  event.target
-                ).entries()
-              )
-            )
-          }
-        );
-
-        const data =
-          await api(
-            "/api/me"
-          );
-
-        setUser(
-          data.user
-        );
-
-        $("#auth-view")
-          ?.classList.add(
-            "hidden"
-          );
-
-        $("#app-view")
-          ?.classList.remove(
-            "hidden"
-          );
-
-        await loadDashboard();
-
-        toast(
-          "Compte creat correctament."
-        );
-
-      } catch (error) {
-
-        if ($("#auth-message")) {
-          $("#auth-message").textContent =
-            error.message;
-        }
-      }
-    };
+  }
 }
 
 
 /* ============================================================
-   INTERFÍCIE
+   CERCA GLOBAL
 ============================================================ */
 
-function bindUI() {
+function bindGlobalSearch() {
 
-  bindNav();
+  const input =
+    $("#global-search");
 
-  bindAuth();
+  if (!input) return;
 
-  if ($("#logout-btn")) {
-    $("#logout-btn").onclick =
-      async () => {
+  input.addEventListener(
+    "keydown",
+    (event) => {
 
-        try {
-          await api(
-            "/api/logout",
-            {
-              method: "POST"
-            }
-          );
-        } finally {
-          location.reload();
-        }
-      };
-  }
+      if (
+        event.key !==
+        "Enter"
+      ) {
+        return;
+      }
 
-  if ($("#new-task")) {
-    $("#new-task").onclick =
-      () =>
-        openTaskModal();
-  }
+      const query =
+        input.value
+          .trim()
+          .toLowerCase();
 
-  if ($("#new-exam")) {
-    $("#new-exam").onclick =
-      () =>
-        openExamModal();
-  }
+      if (!query) return;
 
-  if ($("#quick-add")) {
-    $("#quick-add").onclick =
-      () =>
-        openTaskModal();
-  }
-
-  if ($("#quick-ai")) {
-    $("#quick-ai").onclick =
-      () =>
-        navigate("ai");
-  }
-
-  if ($("#recalc-ai")) {
-    $("#recalc-ai").onclick =
-      () =>
-        renderRecommendations(
-          true
+      const task =
+        state.tasks.find(
+          (item) =>
+            (
+              item.name +
+              " " +
+              (item.subject || "")
+            )
+              .toLowerCase()
+              .includes(query)
         );
-  }
 
-  if ($("#open-reco")) {
-    $("#open-reco").onclick =
-      openReco;
-  }
+      if (task) {
 
-  if ($("#open-test")) {
-    $("#open-test").onclick =
-      openTest;
-  }
-
-  if ($("#generate-plan")) {
-    $("#generate-plan").onclick =
-      generatePlan;
-  }
-
-  if ($("#prev-week")) {
-    $("#prev-week").onclick =
-      () => {
-        state.weekOffset--;
-        renderPlanner();
-      };
-  }
-
-  if ($("#next-week")) {
-    $("#next-week").onclick =
-      () => {
-        state.weekOffset++;
-        renderPlanner();
-      };
-  }
-
-  if ($("#add-session")) {
-    $("#add-session").onclick =
-      () =>
-        toast(
-          "Les sessions es creen a partir del teu pla."
+        navigate(
+          "tasks"
         );
-  }
 
-  if ($("#task-search")) {
-    $("#task-search").oninput =
-      (event) => {
         state.taskSearch =
-          event.target.value;
+          query;
+
+        const search =
+          $("#task-search");
+
+        if (search) {
+          search.value =
+            query;
+        }
 
         renderTasks();
-      };
-  }
 
-  $$("[data-filter]")
-    .forEach(
-      (button) => {
-
-        button.onclick =
-          () => {
-
-            $$("[data-filter]")
-              .forEach(
-                (item) =>
-                  item.classList.remove(
-                    "active"
-                  )
-              );
-
-            button.classList.add(
-              "active"
-            );
-
-            state.taskFilter =
-              button.dataset.filter;
-
-            renderTasks();
-          };
+        return;
       }
-    );
 
-  $$("[data-mode]")
+      const exam =
+        state.exams.find(
+          (item) =>
+            (
+              item.subject +
+              " " +
+              (item.syllabus || "")
+            )
+              .toLowerCase()
+              .includes(query)
+        );
+
+      if (exam) {
+
+        navigate(
+          "exams"
+        );
+
+        return;
+      }
+
+      const classroom =
+        state.classes.find(
+          (item) =>
+            (
+              item.name +
+              " " +
+              item.code
+            )
+              .toLowerCase()
+              .includes(query)
+        );
+
+      if (classroom) {
+
+        navigate(
+          "classes"
+        );
+
+        setTimeout(
+          () =>
+            openClassDetail(
+              classroom.id
+            ),
+          100
+        );
+
+        return;
+      }
+
+      toast(
+        "No he trobat cap resultat."
+      );
+
+    }
+  );
+}
+
+
+/* ============================================================
+   ACCIONS RÀPIDES
+============================================================ */
+
+function bindQuickActions() {
+
+  $$("[data-action]")
     .forEach(
       (button) => {
 
-        button.onclick =
-          () => {
+        button.onclick = () => {
 
-            $$("[data-mode]")
-              .forEach(
-                (item) =>
-                  item.classList.remove(
-                    "active"
-                  )
-              );
+          const action =
+            button.dataset.action;
 
-            button.classList.add(
-              "active"
+          if (
+            action ===
+            "new-task"
+          ) {
+
+            openTaskModal();
+
+            return;
+          }
+
+          if (
+            action ===
+            "new-exam"
+          ) {
+
+            openExamModal();
+
+            return;
+          }
+
+          if (
+            action ===
+            "open-ai"
+          ) {
+
+            navigate(
+              "ai"
             );
 
-            state.aiMode =
-              button.dataset.mode;
+            $("#ai-input")
+              ?.focus();
 
-            if ($("#ai-input")) {
-              $("#ai-input").placeholder =
-                state.aiMode ===
-                "RESUMIR"
-                  ? "Enganxa el text que vols resumir..."
-                  : "Escriu una pregunta...";
+            return;
+          }
+
+          if (
+            action ===
+            "generate-test"
+          ) {
+
+            navigate(
+              "ai"
+            );
+
+            setTimeout(
+              () => {
+
+                $(
+                  "[data-ai-tool='test']"
+                )?.click();
+
+              },
+              100
+            );
+
+            return;
+          }
+
+          if (
+            action ===
+            "new-class"
+          ) {
+
+            if (
+              state.user?.role ===
+              "professor"
+            ) {
+
+              navigate(
+                "classes"
+              );
+
+              setTimeout(
+                openClassCreate,
+                100
+              );
+
+            } else {
+
+              navigate(
+                "classes"
+              );
+
+              setTimeout(
+                openJoinModal,
+                100
+              );
+
             }
-          };
+
+          }
+
+        };
+
+      }
+    );
+}
+
+
+/* ============================================================
+   MODALS I BOTONS GLOBALS
+============================================================ */
+
+function bindGlobalButtons() {
+
+  $("#new-task-button")?.addEventListener(
+    "click",
+    () =>
+      openTaskModal()
+  );
+
+  $("#new-exam-button")?.addEventListener(
+    "click",
+    () =>
+      openExamModal()
+  );
+
+  $("#add-task")?.addEventListener(
+    "click",
+    () =>
+      openTaskModal()
+  );
+
+  $("#add-exam")?.addEventListener(
+    "click",
+    () =>
+      openExamModal()
+  );
+
+  $("#new-task-dashboard")?.addEventListener(
+    "click",
+    () =>
+      openTaskModal()
+  );
+
+  $("#new-exam-dashboard")?.addEventListener(
+    "click",
+    () =>
+      openExamModal()
+  );
+
+  $("#open-ai-dashboard")?.addEventListener(
+    "click",
+    () => {
+
+      navigate(
+        "ai"
+      );
+
+      $("#ai-input")
+        ?.focus();
+
+    }
+  );
+
+  $("#recalc-ai")?.addEventListener(
+    "click",
+    () =>
+      renderRecommendations(
+        true
+      )
+  );
+
+  $("#generate-plan")?.addEventListener(
+    "click",
+    () =>
+      generatePlan()
+  );
+
+  $("#planner-prev")?.addEventListener(
+    "click",
+    () => {
+
+      state.weekOffset--;
+
+      renderPlanner();
+
+    }
+  );
+
+  $("#planner-next")?.addEventListener(
+    "click",
+    () => {
+
+      state.weekOffset++;
+
+      renderPlanner();
+
+    }
+  );
+
+  $("#planner-today")?.addEventListener(
+    "click",
+    () => {
+
+      state.weekOffset = 0;
+
+      renderPlanner();
+
+    }
+  );
+
+  $("#calendar-prev")?.addEventListener(
+    "click",
+    () =>
+      toast(
+        "El calendari mensual es mostrarà segons la vista seleccionada."
+      )
+  );
+
+  $("#calendar-next")?.addEventListener(
+    "click",
+    () =>
+      toast(
+        "El calendari mensual es mostrarà segons la vista seleccionada."
+      )
+  );
+
+  $("#calendar-today")?.addEventListener(
+    "click",
+    () =>
+      renderCalendar()
+  );
+
+}
+
+
+/* ============================================================
+   IA — MODES
+============================================================ */
+
+function bindAiModes() {
+
+  $$("[data-ai-mode]")
+    .forEach(
+      (button) => {
+
+        button.addEventListener(
+          "click",
+          () =>
+            setAiMode(
+              button.dataset.aiMode
+            )
+        );
+
       }
     );
 
-  if ($("#ai-form")) {
-    $("#ai-form").onsubmit =
-      (event) => {
-        event.preventDefault();
-        sendAI();
-      };
-  }
+  $$("[data-ai-tool]")
+    .forEach(
+      (button) => {
 
-  if ($("#ai-input")) {
-    $("#ai-input").addEventListener(
+        button.addEventListener(
+          "click",
+          () => {
+
+            $$(
+              "[data-ai-tool]"
+            )
+              .forEach(
+                (item) =>
+                  item.classList.toggle(
+                    "active",
+                    item === button
+                  )
+              );
+
+            const tool =
+              button.dataset.aiTool;
+
+            const chat =
+              $("#ai-chat");
+
+            const test =
+              $("#ai-test");
+
+            if (tool === "test") {
+
+              chat?.classList.add(
+                "hidden"
+              );
+
+              test?.classList.remove(
+                "hidden"
+              );
+
+              return;
+            }
+
+            test?.classList.add(
+              "hidden"
+            );
+
+            chat?.classList.remove(
+              "hidden"
+            );
+
+            setAiMode(
+              tool === "explain"
+                ? "EXPLICAR"
+                : tool === "study"
+                  ? "ESTUDIAR"
+                  : tool === "summary"
+                    ? "RESUMIR"
+                    : "DUBTE"
+            );
+
+          }
+        );
+
+      }
+    );
+
+  setAiMode(
+    "DUBTE"
+  );
+}
+
+
+/* ============================================================
+   FORMULARI D'IA
+============================================================ */
+
+function bindAiForm() {
+
+  const form =
+    $("#ai-form");
+
+  if (!form) return;
+
+  form.onsubmit =
+    async (event) => {
+
+      event.preventDefault();
+
+      await sendAiMessage();
+
+    };
+
+  const input =
+    $("#ai-input");
+
+  if (input) {
+
+    input.addEventListener(
       "keydown",
       (event) => {
 
@@ -4026,23 +5409,1785 @@ function bindUI() {
             "Enter" &&
           !event.shiftKey
         ) {
+
           event.preventDefault();
-          sendAI();
+
+          form.requestSubmit();
+
         }
+
       }
     );
+
   }
+
+  $("#test-generate")
+    ?.addEventListener(
+      "click",
+      () =>
+        generateTest()
+    );
+
 }
 
 
 /* ============================================================
-   ARRANCADA
+   LOGOUT
+============================================================ */
+
+async function logout() {
+
+  try {
+
+    await api(
+      "/api/logout",
+      {
+        method: "POST"
+      }
+    );
+
+  } catch {}
+
+  state.user =
+    null;
+
+  state.tasks =
+    [];
+
+  state.exams =
+    [];
+
+  state.classes =
+    [];
+
+  $("#app-view")
+    ?.classList.add(
+      "hidden"
+    );
+
+  $("#auth-view")
+    ?.classList.remove(
+      "hidden"
+    );
+
+  toast(
+    "Sessió tancada."
+  );
+
+}
+
+function bindLogout() {
+
+  $$(
+    "#logout, #logout-button, [data-logout]"
+  )
+    .forEach(
+      (button) => {
+
+        button.onclick =
+          () =>
+            logout();
+
+      }
+    );
+
+}
+
+
+/* ============================================================
+   LOGIN
+============================================================ */
+
+function bindLogin() {
+
+  const form =
+    $("#login-form");
+
+  if (!form) return;
+
+  form.onsubmit =
+    async (event) => {
+
+      event.preventDefault();
+
+      const button =
+        form.querySelector(
+          "button[type='submit']"
+        );
+
+      if (button) {
+        button.disabled =
+          true;
+      }
+
+      const data =
+        Object.fromEntries(
+          new FormData(
+            form
+          ).entries()
+        );
+
+      try {
+
+        const result =
+          await api(
+            "/api/login",
+            {
+              method: "POST",
+
+              body:
+                JSON.stringify(
+                  data
+                )
+            }
+          );
+
+        if (result.user) {
+
+          $("#auth-view")
+            ?.classList.add(
+              "hidden"
+            );
+
+          $("#app-view")
+            ?.classList.remove(
+              "hidden"
+            );
+
+          setUser(
+            result.user
+          );
+
+          await loadDashboard();
+
+          navigate(
+            "dashboard"
+          );
+
+          form.reset();
+
+        } else {
+
+          toast(
+            "No s'ha pogut iniciar sessió.",
+            true
+          );
+
+        }
+
+      } catch (error) {
+
+        showToastFromError(
+          error
+        );
+
+      } finally {
+
+        if (button) {
+          button.disabled =
+            false;
+        }
+
+      }
+
+    };
+}
+
+
+/* ============================================================
+   REGISTRE
+============================================================ */
+
+function bindRegister() {
+
+  const form =
+    $("#register-form");
+
+  if (!form) return;
+
+  form.onsubmit =
+    async (event) => {
+
+      event.preventDefault();
+
+      const data =
+        Object.fromEntries(
+          new FormData(
+            form
+          ).entries()
+        );
+
+      if (
+        data.password !==
+        data.password_confirm
+      ) {
+
+        toast(
+          "Les contrasenyes no coincideixen.",
+          true
+        );
+
+        return;
+      }
+
+      try {
+
+        const result =
+          await api(
+            "/api/register",
+            {
+              method: "POST",
+
+              body:
+                JSON.stringify(
+                  data
+                )
+            }
+          );
+
+        toast(
+          result.message ||
+          "Compte creat correctament."
+        );
+
+        form.reset();
+
+        /*
+         * Si el backend inicia sessió
+         * automàticament després del registre.
+         */
+        if (result.user) {
+
+          $("#auth-view")
+            ?.classList.add(
+              "hidden"
+            );
+
+          $("#app-view")
+            ?.classList.remove(
+              "hidden"
+            );
+
+          setUser(
+            result.user
+          );
+
+          await loadDashboard();
+
+          navigate(
+            "dashboard"
+          );
+
+          return;
+        }
+
+        /*
+         * Si no inicia sessió,
+         * tornem al formulari de login.
+         */
+        $("#show-login")
+          ?.click();
+
+      } catch (error) {
+
+        showToastFromError(
+          error
+        );
+
+      }
+
+    };
+}
+
+
+/* ============================================================
+   CANVI LOGIN / REGISTRE
+============================================================ */
+
+function bindAuthSwitch() {
+
+  $("#show-register")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        $("#login-panel")
+          ?.classList.add(
+            "hidden"
+          );
+
+        $("#register-panel")
+          ?.classList.remove(
+            "hidden"
+          );
+
+      }
+    );
+
+  $("#show-login")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        $("#register-panel")
+          ?.classList.add(
+            "hidden"
+          );
+
+        $("#login-panel")
+          ?.classList.remove(
+            "hidden"
+          );
+
+      }
+    );
+
+}
+/* ============================================================
+   UI MÒBIL
+============================================================ */
+
+function bindMobileMenu() {
+
+  const button =
+    $("#mobile-menu");
+
+  const sidebar =
+    $(".sidebar");
+
+  if (
+    !button ||
+    !sidebar
+  ) {
+    return;
+  }
+
+  button.onclick = () => {
+
+    sidebar.classList.toggle(
+      "mobile-open"
+    );
+
+  };
+
+  $$(".nav-item")
+    .forEach(
+      (item) => {
+
+        item.addEventListener(
+          "click",
+          () => {
+
+            sidebar.classList.remove(
+              "mobile-open"
+            );
+
+          }
+        );
+
+      }
+    );
+}
+
+
+/* ============================================================
+   PERFIL / COMPTE
+============================================================ */
+
+function bindProfile() {
+
+  const profileButton =
+    $("#profile-button");
+
+  if (profileButton) {
+
+    profileButton.onclick =
+      () =>
+        navigate(
+          "profile"
+        );
+
+  }
+
+  const avatar =
+    $("#top-avatar");
+
+  if (avatar) {
+
+    avatar.onclick =
+      () =>
+        navigate(
+          "profile"
+        );
+
+  }
+
+  const profileEdit =
+    $("#profile-edit");
+
+  if (profileEdit) {
+
+    profileEdit.onclick =
+      () => {
+
+        toast(
+          "La informació del perfil es gestiona des del compte."
+        );
+
+      };
+
+  }
+
+}
+
+
+/* ============================================================
+   NOTIFICACIONS
+============================================================ */
+
+function renderNotifications() {
+
+  const button =
+    $("#notifications-button");
+
+  const panel =
+    $("#notifications-panel");
+
+  if (
+    !button ||
+    !panel
+  ) {
+    return;
+  }
+
+  const notifications = [];
+
+  const urgentTasks =
+    state.tasks.filter(
+      (task) =>
+        task.status !==
+          "completada" &&
+        daysUntil(
+          task.due_date
+        ) <= 2 &&
+        daysUntil(
+          task.due_date
+        ) >= 0
+    );
+
+  urgentTasks.forEach(
+    (task) => {
+
+      notifications.push({
+
+        title:
+          "Entrega propera",
+
+        text:
+          `${task.name} · ${fmtDate(
+            task.due_date
+          )}`,
+
+        type:
+          "task"
+
+      });
+
+    }
+  );
+
+  const upcomingExams =
+    state.exams.filter(
+      (exam) =>
+        daysUntil(
+          exam.exam_date
+        ) <= 7 &&
+        daysUntil(
+          exam.exam_date
+        ) >= 0
+    );
+
+  upcomingExams.forEach(
+    (exam) => {
+
+      notifications.push({
+
+        title:
+          "Examen proper",
+
+        text:
+          `${exam.subject} · ${fmtDate(
+            exam.exam_date
+          )}`,
+
+        type:
+          "exam"
+
+      });
+
+    }
+  );
+
+  if (!notifications.length) {
+
+    panel.innerHTML = `
+
+      <div class="notification-empty">
+
+        <span>✓</span>
+
+        <b>
+          Tot al dia
+        </b>
+
+        <small>
+          No tens avisos nous.
+        </small>
+
+      </div>
+
+    `;
+
+  } else {
+
+    panel.innerHTML =
+      notifications
+        .slice(0, 8)
+        .map(
+          (item) => `
+
+            <div
+              class="notification-item"
+            >
+
+              <div
+                class="notification-icon ${item.type}"
+              >
+                ${
+                  item.type ===
+                  "exam"
+                    ? "E"
+                    : "T"
+                }
+              </div>
+
+              <div>
+
+                <strong>
+                  ${esc(
+                    item.title
+                  )}
+                </strong>
+
+                <small>
+                  ${esc(
+                    item.text
+                  )}
+                </small>
+
+              </div>
+
+            </div>
+
+          `
+        )
+        .join("");
+
+  }
+
+}
+
+function bindNotifications() {
+
+  const button =
+    $("#notifications-button");
+
+  const panel =
+    $("#notifications-panel");
+
+  if (
+    !button ||
+    !panel
+  ) {
+    return;
+  }
+
+  button.onclick =
+    (event) => {
+
+      event.stopPropagation();
+
+      panel.classList.toggle(
+        "hidden"
+      );
+
+      if (
+        !panel.classList.contains(
+          "hidden"
+        )
+      ) {
+        renderNotifications();
+      }
+
+    };
+
+  document.addEventListener(
+    "click",
+    (event) => {
+
+      if (
+        !panel.contains(
+          event.target
+        ) &&
+        event.target !== button
+      ) {
+
+        panel.classList.add(
+          "hidden"
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   MODAL GLOBAL
+============================================================ */
+
+function bindModalRoot() {
+
+  const root =
+    $("#modal-root");
+
+  if (!root) return;
+
+  root.addEventListener(
+    "click",
+    (event) => {
+
+      if (
+        event.target.classList.contains(
+          "modal-backdrop"
+        )
+      ) {
+
+        root.innerHTML = "";
+
+      }
+
+    }
+  );
+
+  document.addEventListener(
+    "keydown",
+    (event) => {
+
+      if (
+        event.key ===
+        "Escape"
+      ) {
+
+        root.innerHTML = "";
+
+      }
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   TECLAT RÀPID
+============================================================ */
+
+function bindKeyboardShortcuts() {
+
+  document.addEventListener(
+    "keydown",
+    (event) => {
+
+      if (
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey
+      ) {
+        return;
+      }
+
+      const active =
+        document.activeElement;
+
+      const typing =
+        active &&
+        (
+          active.tagName ===
+            "INPUT" ||
+          active.tagName ===
+            "TEXTAREA" ||
+          active.tagName ===
+            "SELECT"
+        );
+
+      if (typing) {
+        return;
+      }
+
+      if (
+        event.key ===
+        "t"
+      ) {
+
+        navigate(
+          "tasks"
+        );
+
+      }
+
+      if (
+        event.key ===
+        "e"
+      ) {
+
+        navigate(
+          "exams"
+        );
+
+      }
+
+      if (
+        event.key ===
+        "c"
+      ) {
+
+        navigate(
+          "classes"
+        );
+
+      }
+
+      if (
+        event.key ===
+        "a"
+      ) {
+
+        navigate(
+          "ai"
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   BOTONS DEL DASHBOARD
+============================================================ */
+
+function bindDashboardButtons() {
+
+  const tasksButton =
+    $("#dashboard-see-tasks");
+
+  if (tasksButton) {
+
+    tasksButton.onclick =
+      () =>
+        navigate(
+          "tasks"
+        );
+
+  }
+
+  const aiButton =
+    $("#dashboard-open-ai");
+
+  if (aiButton) {
+
+    aiButton.onclick =
+      () => {
+
+        navigate(
+          "ai"
+        );
+
+        setTimeout(
+          () =>
+            $("#ai-input")
+              ?.focus(),
+          100
+        );
+
+      };
+
+  }
+
+  const plannerButton =
+    $("#dashboard-open-planner");
+
+  if (plannerButton) {
+
+    plannerButton.onclick =
+      () =>
+        navigate(
+          "planner"
+        );
+
+  }
+
+  const classesButton =
+    $("#dashboard-open-classes");
+
+  if (classesButton) {
+
+    classesButton.onclick =
+      () =>
+        navigate(
+          "classes"
+        );
+
+  }
+
+}
+
+
+/* ============================================================
+   CLASSES — ACTUALITZACIÓ DESPRÉS DE CREAR / UNIR-SE
+============================================================ */
+
+async function refreshClasses() {
+
+  try {
+
+    await loadClasses();
+
+  } catch (error) {
+
+    showToastFromError(
+      error
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   REFRESCAR DADES
+============================================================ */
+
+async function refreshAll() {
+
+  try {
+
+    const me =
+      await api(
+        "/api/me"
+      );
+
+    if (me.user) {
+
+      setUser(
+        me.user
+      );
+
+    }
+
+    await loadDashboard();
+
+    if (
+      state.section ===
+      "classes"
+    ) {
+
+      await loadClasses();
+
+    }
+
+    if (
+      state.section ===
+      "progress"
+    ) {
+
+      await loadProgress();
+
+    }
+
+    renderNotifications();
+
+  } catch (error) {
+
+    showToastFromError(
+      error
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   DETECCIÓ DE PÀGINA / SECCIÓ INICIAL
+============================================================ */
+
+function detectInitialSection() {
+
+  const hash =
+    window.location.hash
+      .replace(
+        "#",
+        ""
+      )
+      .trim();
+
+  const valid = [
+    "dashboard",
+    "tasks",
+    "exams",
+    "planner",
+    "classes",
+    "ai",
+    "progress",
+    "profile"
+  ];
+
+  if (
+    valid.includes(
+      hash
+    )
+  ) {
+
+    state.section =
+      hash;
+
+  } else {
+
+    state.section =
+      "dashboard";
+
+  }
+
+}
+
+
+/* ============================================================
+   HASH DE NAVEGACIÓ
+============================================================ */
+
+function bindHashNavigation() {
+
+  window.addEventListener(
+    "hashchange",
+    () => {
+
+      const hash =
+        window.location.hash
+          .replace(
+            "#",
+            ""
+          );
+
+      const valid = [
+        "dashboard",
+        "tasks",
+        "exams",
+        "planner",
+        "classes",
+        "ai",
+        "progress",
+        "profile"
+      ];
+
+      if (
+        valid.includes(
+          hash
+        )
+      ) {
+
+        navigate(
+          hash
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   SOBRECÀRREGA DE NAVIGATE PER ACTUALITZAR HASH
+============================================================ */
+
+const originalNavigate =
+  navigate;
+
+navigate = function(section) {
+
+  originalNavigate(
+    section
+  );
+
+  try {
+
+    history.replaceState(
+      null,
+      "",
+      "#" + section
+    );
+
+  } catch {}
+
+};
+
+
+/* ============================================================
+   BOTONS DE NAVEGACIÓ DE PLANIFICADOR
+============================================================ */
+
+function bindPlannerControls() {
+
+  $("#planner-add-session")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        toast(
+          "Les sessions es poden adaptar a partir de les teves tasques i exàmens."
+        );
+
+      }
+    );
+
+  $("#planner-regenerate")
+    ?.addEventListener(
+      "click",
+      () =>
+        generatePlan()
+    );
+
+}
+
+
+/* ============================================================
+   BOTONS DE CALENDARI
+============================================================ */
+
+function bindCalendarControls() {
+
+  $("#open-calendar")
+    ?.addEventListener(
+      "click",
+      () =>
+        navigate(
+          "dashboard"
+        )
+    );
+
+  $("#calendar-refresh")
+    ?.addEventListener(
+      "click",
+      () =>
+        refreshAll()
+    );
+
+}
+
+
+/* ============================================================
+   ACTUALITZACIÓ AUTOMÀTICA SUAU
+============================================================ */
+
+let refreshTimer = null;
+
+function startRefreshTimer() {
+
+  if (refreshTimer) {
+
+    clearInterval(
+      refreshTimer
+    );
+
+  }
+
+  refreshTimer =
+    setInterval(
+      async () => {
+
+        if (
+          document.hidden
+        ) {
+          return;
+        }
+
+        try {
+
+          const me =
+            await api(
+              "/api/me"
+            );
+
+          if (
+            me.user
+          ) {
+
+            await loadDashboard();
+
+            if (
+              state.section ===
+              "classes"
+            ) {
+
+              await loadClasses();
+
+            }
+
+          }
+
+        } catch {}
+
+      },
+      120000
+    );
+
+}
+
+
+/* ============================================================
+   FORMULARI DE PERFIL
+============================================================ */
+
+function bindProfileForm() {
+
+  const form =
+    $("#profile-form");
+
+  if (!form) return;
+
+  form.onsubmit =
+    async (event) => {
+
+      event.preventDefault();
+
+      const data =
+        Object.fromEntries(
+          new FormData(
+            form
+          ).entries()
+        );
+
+      try {
+
+        const result =
+          await api(
+            "/api/profile",
+            {
+              method: "PUT",
+
+              body:
+                JSON.stringify(
+                  data
+                )
+            }
+          );
+
+        if (result.user) {
+
+          setUser(
+            result.user
+          );
+
+        }
+
+        toast(
+          "Perfil actualitzat."
+        );
+
+      } catch (error) {
+
+        /*
+         * Si encara no existeix
+         * l'endpoint de perfil,
+         * no bloquegem la resta de l'app.
+         */
+        showToastFromError(
+          error
+        );
+
+      }
+
+    };
+
+}
+
+
+/* ============================================================
+   ESTAT VISUAL DE CÀRREGA
+============================================================ */
+
+function setLoading(
+  selector,
+  loading,
+  text = "Carregant..."
+) {
+
+  const element =
+    $(selector);
+
+  if (!element) return;
+
+  if (loading) {
+
+    element.dataset.previousText =
+      element.textContent;
+
+    element.disabled =
+      true;
+
+    element.textContent =
+      text;
+
+  } else {
+
+    element.disabled =
+      false;
+
+    if (
+      element.dataset.previousText
+    ) {
+
+      element.textContent =
+        element.dataset.previousText;
+
+    }
+
+  }
+
+}
+
+
+/* ============================================================
+   INICIALITZACIÓ DE L'APP
+============================================================ */
+
+async function initApp() {
+
+  detectInitialSection();
+
+  bindNav();
+
+  bindLogin();
+
+  bindRegister();
+
+  bindAuthSwitch();
+
+  bindLogout();
+
+  bindTaskFilters();
+
+  bindAiModes();
+
+  bindAiForm();
+
+  bindGlobalButtons();
+
+  bindQuickActions();
+
+  bindMobileMenu();
+
+  bindProfile();
+
+  bindNotifications();
+
+  bindModalRoot();
+
+  bindKeyboardShortcuts();
+
+  bindDashboardButtons();
+
+  bindPlannerControls();
+
+  bindCalendarControls();
+
+  bindGlobalSearch();
+
+  bindProfileForm();
+
+  bindHashNavigation();
+
+  renderCalendar();
+
+  renderProfile();
+
+  /*
+   * Comprovem si ja hi ha una sessió.
+   */
+  await boot();
+
+  /*
+   * Un cop l'app ja és carregada,
+   * mostrem la secció inicial.
+   */
+  if (
+    state.user
+  ) {
+
+    navigate(
+      state.section
+    );
+
+    renderProfile();
+
+    renderCalendar();
+
+    renderNotifications();
+
+  }
+
+  startRefreshTimer();
+
+}
+
+
+/* ============================================================
+   INICI
+============================================================ */
+
+if (
+  document.readyState ===
+  "loading"
+) {
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    initApp
+  );
+
+} else {
+
+  initApp();
+
+}
+
+/* ============================================================
+   FINAL — UTILITATS DE COMPATIBILITAT
+============================================================ */
+
+/*
+ * Alguns elements de versions anteriors de MiniClassroom
+ * poden existir o no segons la versió de l'index.html.
+ * Aquest bloc els connecta sense donar errors si no existeixen.
+ */
+
+function bindOptionalButtons() {
+
+  const optionalActions = {
+
+    "open-tasks":
+      () => navigate("tasks"),
+
+    "open-exams":
+      () => navigate("exams"),
+
+    "open-planner":
+      () => navigate("planner"),
+
+    "open-classes":
+      () => navigate("classes"),
+
+    "open-ai":
+      () => navigate("ai"),
+
+    "open-progress":
+      () => navigate("progress"),
+
+    "open-profile":
+      () => navigate("profile"),
+
+    "create-task":
+      () => openTaskModal(),
+
+    "create-exam":
+      () => openExamModal(),
+
+    "create-class":
+      () => {
+
+        navigate("classes");
+
+        setTimeout(
+          () => {
+
+            if (
+              state.user?.role ===
+              "professor"
+            ) {
+
+              openClassCreate();
+
+            } else {
+
+              openJoinModal();
+
+            }
+
+          },
+          100
+        );
+
+      },
+
+    "refresh":
+      () => refreshAll()
+
+  };
+
+  Object.entries(
+    optionalActions
+  ).forEach(
+    ([action, handler]) => {
+
+      $$(
+        `[data-action="${action}"]`
+      )
+        .forEach(
+          (button) => {
+
+            button.addEventListener(
+              "click",
+              handler
+            );
+
+          }
+        );
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   ENLLAÇOS DIRECTES DE LA SIDEBAR
+============================================================ */
+
+function bindSidebar() {
+
+  const items =
+    $$(".nav-item");
+
+  items.forEach(
+    (item) => {
+
+      item.addEventListener(
+        "click",
+        () => {
+
+          const section =
+            item.dataset.section;
+
+          if (!section) {
+            return;
+          }
+
+          navigate(
+            section
+          );
+
+        }
+      );
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   DETECCIÓ DEL ROL
+============================================================ */
+
+function applyRoleUI() {
+
+  if (!state.user) {
+    return;
+  }
+
+  const isProfessor =
+    state.user.role ===
+    "professor";
+
+  /*
+   * Elements exclusius del professor.
+   */
+  $$("[data-role='professor']")
+    .forEach(
+      (element) => {
+
+        element.classList.toggle(
+          "hidden",
+          !isProfessor
+        );
+
+      }
+    );
+
+  /*
+   * Elements exclusius de l'alumne.
+   */
+  $$("[data-role='student']")
+    .forEach(
+      (element) => {
+
+        element.classList.toggle(
+          "hidden",
+          isProfessor
+        );
+
+      }
+    );
+
+}
+
+
+/* ============================================================
+   ACTUALITZAR ROL DESPRÉS DEL LOGIN
+============================================================ */
+
+const originalSetUser =
+  setUser;
+
+setUser = function(user) {
+
+  originalSetUser(
+    user
+  );
+
+  applyRoleUI();
+
+  renderProfile();
+
+};
+
+
+/* ============================================================
+   CONTROL D'ERRORS GLOBALS
 ============================================================ */
 
 window.addEventListener(
-  "DOMContentLoaded",
-  () => {
-    bindUI();
-    boot();
+  "unhandledrejection",
+  (event) => {
+
+    console.error(
+      "MiniClassroom:",
+      event.reason
+    );
+
   }
 );
+
+window.addEventListener(
+  "error",
+  (event) => {
+
+    console.error(
+      "MiniClassroom:",
+      event.error ||
+      event.message
+    );
+
+  }
+);
+
+
+/* ============================================================
+   PREVENIR DOBLE ENVÍO DE FORMULARIS
+============================================================ */
+
+document.addEventListener(
+  "submit",
+  (event) => {
+
+    const form =
+      event.target;
+
+    if (
+      !form ||
+      !form.matches(
+        "form"
+      )
+    ) {
+      return;
+    }
+
+    if (
+      form.dataset.submitting ===
+      "true"
+    ) {
+
+      event.preventDefault();
+
+      return;
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   ESTAT DE CONNEXIÓ
+============================================================ */
+
+function updateConnectionState() {
+
+  const indicator =
+    $("#connection-status");
+
+  if (!indicator) {
+    return;
+  }
+
+  const online =
+    navigator.onLine;
+
+  indicator.classList.toggle(
+    "offline",
+    !online
+  );
+
+  indicator.textContent =
+    online
+      ? "Connectat"
+      : "Sense connexió";
+
+}
+
+window.addEventListener(
+  "online",
+  updateConnectionState
+);
+
+window.addEventListener(
+  "offline",
+  updateConnectionState
+);
+
+
+/* ============================================================
+   PREPARAR COMPONENTS OPCIONALS
+============================================================ */
+
+function prepareOptionalComponents() {
+
+  bindOptionalButtons();
+
+  bindSidebar();
+
+  updateConnectionState();
+
+}
+
+
+/* ============================================================
+   ARRANCADA FINAL
+============================================================ */
+
+const previousInitApp =
+  initApp;
+
+initApp = async function() {
+
+  prepareOptionalComponents();
+
+  await previousInitApp();
+
+  applyRoleUI();
+
+  renderProfile();
+
+  renderNotifications();
+
+};
+
+
+/* ============================================================
+   SEGURETAT BÀSICA DE NAVEGACIÓ
+============================================================ */
+
+document.addEventListener(
+  "click",
+  (event) => {
+
+    const link =
+      event.target.closest(
+        "a"
+      );
+
+    if (!link) {
+      return;
+    }
+
+    const href =
+      link.getAttribute(
+        "href"
+      );
+
+    /*
+     * Els enllaços interns no han
+     * de provocar recàrregues innecessàries.
+     */
+    if (
+      href &&
+      href.startsWith("#")
+    ) {
+
+      event.preventDefault();
+
+      const section =
+        href
+          .replace(
+            "#",
+            ""
+          );
+
+      navigate(
+        section
+      );
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   FINAL
+============================================================ */
+
+/*
+ * MiniClassroom
+ *
+ * Aplicació educativa amb:
+ * - autenticació
+ * - tasques
+ * - exàmens
+ * - planificador
+ * - classes
+ * - aula digital
+ * - IA d'estudi
+ * - tests
+ * - progrés
+ * - perfil
+ *
+ * Fi del fitxer.
+ */
