@@ -338,3 +338,906 @@
     width: 100% !important;
   }
 }
+/* =========================================================
+   MINIClassroom — REDISSENY DE CLASSES
+   Només estètica
+========================================================= */
+
+/* ---------- BOTONS ---------- */
+
+.btn {
+  min-height: 40px !important;
+  padding: 0 16px !important;
+  border-radius: 10px !important;
+  border: 1px solid transparent !important;
+  font-weight: 800 !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  transition:
+    transform .18s ease,
+    background .18s ease,
+    border-color .18s ease,
+    box-shadow .18s ease !important;
+}
+
+.btn:hover {
+  transform: translateY(-1px) !important;
+}
+
+.btn-yellow {
+  background: #ffe000 !important;
+  color: #071018 !important;
+  border-color: #ffe000 !important;
+  box-shadow: 0 8px 24px rgba(255,224,0,.16) !important;
+}
+
+.btn-yellow:hover {
+  background: #fff04a !important;
+  border-color: #fff04a !important;
+}
+
+.btn-blue {
+  background: #17b9ee !important;
+  color: #031018 !important;
+  border-color: #17b9ee !important;
+}
+
+.btn-blue:hover {
+  background: #45caf1 !important;
+}
+
+.btn-outline {
+  background: #0d1822 !important;
+  color: #dbe7ec !important;
+  border-color: #2b3d4c !important;
+}
+
+.btn-outline:hover {
+  background: #152633 !important;
+  border-color: #3b5668 !important;
+}
+
+
+/* =========================================================
+   PÀGINA DE CLASSES
+========================================================= */
+
+#section-classes .section-title {
+  margin-bottom: 24px !important;
+}
+
+#section-classes .section-title h1 {
+  font-size: 38px !important;
+  letter-spacing: -.055em !important;
+}
+
+#section-classes .section-title p {
+  font-size: 13px !important;
+  color: #82939f !important;
+}
+
+
+/* ---------- GRID DE CLASSES ---------- */
+
+.class-grid-large {
+  display: grid !important;
+  grid-template-columns:
+    repeat(auto-fill, minmax(280px, 1fr)) !important;
+  gap: 18px !important;
+  align-items: start !important;
+}
+
+.class-grid-large .class-card {
+  min-height: 205px !important;
+}
+
+
+/* ---------- TARGETA DE CLASSE ---------- */
+
+.class-card {
+  position: relative !important;
+  overflow: hidden !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+
+  min-height: 190px !important;
+
+  padding: 0 !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #101e2a 0%,
+      #0b151e 70%
+    ) !important;
+
+  border: 1px solid #203442 !important;
+  border-radius: 16px !important;
+
+  box-shadow:
+    0 12px 35px rgba(0,0,0,.18) !important;
+
+  transition:
+    transform .2s ease,
+    border-color .2s ease,
+    box-shadow .2s ease !important;
+}
+
+.class-card::before {
+  content: "";
+  display: block;
+
+  height: 5px;
+  width: 100%;
+
+  background:
+    linear-gradient(
+      90deg,
+      #17b9ee,
+      #46caf2
+    ) !important;
+}
+
+.class-card:hover {
+  transform: translateY(-3px) !important;
+
+  border-color: rgba(23,185,238,.55) !important;
+
+  box-shadow:
+    0 18px 45px rgba(0,0,0,.30),
+    0 0 0 1px rgba(23,185,238,.08) !important;
+}
+
+.class-card > * {
+  margin-left: 18px !important;
+  margin-right: 18px !important;
+}
+
+.class-card h3 {
+  margin-top: 20px !important;
+  margin-bottom: 6px !important;
+
+  color: #f3f8fa !important;
+
+  font-size: 21px !important;
+  letter-spacing: -.035em !important;
+}
+
+.class-card p {
+  color: #8799a5 !important;
+  font-size: 11px !important;
+}
+
+.class-card .class-code,
+.class-card code {
+  display: inline-flex !important;
+  align-items: center !important;
+
+  width: fit-content !important;
+
+  margin-top: 10px !important;
+  padding: 6px 9px !important;
+
+  border: 1px solid #263b49 !important;
+  border-radius: 7px !important;
+
+  background: #08121a !important;
+
+  color: #b9d5e0 !important;
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace !important;
+
+  font-size: 10px !important;
+  letter-spacing: .08em !important;
+}
+
+.class-card .class-meta {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+
+  margin-top: auto !important;
+  padding-top: 18px !important;
+  padding-bottom: 15px !important;
+
+  color: #7d909c !important;
+  font-size: 10px !important;
+}
+
+.class-card .class-meta span {
+  padding: 5px 8px !important;
+
+  background: #101e29 !important;
+
+  border: 1px solid #20313e !important;
+  border-radius: 6px !important;
+}
+
+
+/* Botó entrar */
+
+.class-card .btn,
+.class-card button {
+  margin-top: auto !important;
+  margin-bottom: 16px !important;
+}
+
+.class-card .btn-outline {
+  width: calc(100% - 36px) !important;
+}
+
+
+/* =========================================================
+   DETALL DE LA CLASSE — ESTIL GOOGLE CLASSROOM
+========================================================= */
+
+#class-detail {
+  width: 100% !important;
+}
+
+.classroom {
+  width: 100% !important;
+  max-width: 1180px !important;
+  margin: 0 auto !important;
+}
+
+
+/* ---------- CAPÇALERA ---------- */
+
+.classroom-cover {
+  position: relative !important;
+  min-height: 245px !important;
+
+  display: flex !important;
+  align-items: flex-end !important;
+
+  overflow: hidden !important;
+
+  padding: 34px !important;
+
+  border-radius: 20px !important;
+
+  background:
+    radial-gradient(
+      circle at 85% 15%,
+      rgba(23,185,238,.28),
+      transparent 32%
+    ),
+    linear-gradient(
+      135deg,
+      #102a3a 0%,
+      #0b1822 55%,
+      #071018 100%
+    ) !important;
+
+  border: 1px solid #263c4b !important;
+
+  box-shadow:
+    0 18px 55px rgba(0,0,0,.24) !important;
+}
+
+.classroom-cover::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background:
+    linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(23,185,238,.07) 45%,
+      transparent 70%
+    ) !important;
+
+  pointer-events: none !important;
+}
+
+.classroom-cover::after {
+  content: "";
+
+  position: absolute;
+
+  width: 220px;
+  height: 220px;
+
+  right: 50px;
+  top: -80px;
+
+  border-radius: 50%;
+
+  border: 1px solid rgba(23,185,238,.14) !important;
+  box-shadow:
+    0 0 0 35px rgba(23,185,238,.025),
+    0 0 0 70px rgba(23,185,238,.018) !important;
+
+  pointer-events: none !important;
+}
+
+.classroom-cover-content {
+  position: relative !important;
+  z-index: 2 !important;
+
+  max-width: 720px !important;
+}
+
+.classroom-cover-content .eyebrow {
+  margin-bottom: 12px !important;
+  color: #58d2f5 !important;
+}
+
+.classroom-cover-content h1 {
+  margin: 0 0 10px !important;
+
+  color: #ffffff !important;
+
+  font-size: clamp(34px, 5vw, 58px) !important;
+  line-height: .95 !important;
+  letter-spacing: -.06em !important;
+}
+
+.classroom-cover-content p {
+  margin: 0 0 18px !important;
+
+  color: #b8cbd4 !important;
+
+  font-size: 13px !important;
+}
+
+.class-code {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+
+  padding: 8px 11px !important;
+
+  background: rgba(3,11,17,.62) !important;
+
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 8px !important;
+
+  color: #b9cbd3 !important;
+
+  font-size: 10px !important;
+}
+
+.class-code strong {
+  color: #ffffff !important;
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace !important;
+
+  letter-spacing: .12em !important;
+}
+
+
+/* =========================================================
+   TABS
+========================================================= */
+
+.classroom-tabs {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+
+  margin-top: 12px !important;
+  padding: 5px !important;
+
+  background: #0a141d !important;
+
+  border: 1px solid #1b2c39 !important;
+  border-radius: 12px !important;
+}
+
+.classroom-tab {
+  min-height: 40px !important;
+
+  padding: 0 17px !important;
+
+  border: 0 !important;
+  border-radius: 8px !important;
+
+  background: transparent !important;
+
+  color: #81929e !important;
+
+  font-size: 11px !important;
+  font-weight: 800 !important;
+
+  cursor: pointer !important;
+
+  transition:
+    background .18s ease,
+    color .18s ease !important;
+}
+
+.classroom-tab:hover {
+  color: #eaf4f8 !important;
+  background: #101f2a !important;
+}
+
+.classroom-tab.active {
+  background: #172c3a !important;
+  color: #ffffff !important;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(23,185,238,.16) !important;
+}
+
+.classroom-tab.active::after {
+  content: "";
+
+  display: block;
+
+  height: 2px;
+  margin-top: 5px;
+
+  border-radius: 2px;
+
+  background: #17b9ee !important;
+}
+
+
+/* =========================================================
+   COS DE LA CLASSE
+========================================================= */
+
+.classroom-body {
+  display: grid !important;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    290px !important;
+
+  gap: 18px !important;
+
+  margin-top: 18px !important;
+}
+
+.stream {
+  min-width: 0 !important;
+
+  display: grid !important;
+  gap: 14px !important;
+}
+
+
+/* ---------- PUBLICACIONS ---------- */
+
+.class-post {
+  padding: 18px !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #0d1923,
+      #0a141d
+    ) !important;
+
+  border: 1px solid #1c2e3b !important;
+  border-radius: 14px !important;
+
+  box-shadow:
+    0 8px 30px rgba(0,0,0,.12) !important;
+}
+
+.class-post:hover {
+  border-color: #294252 !important;
+}
+
+.post-head {
+  display: flex !important;
+  align-items: center !important;
+  gap: 11px !important;
+
+  margin-bottom: 15px !important;
+}
+
+.post-avatar {
+  width: 34px !important;
+  height: 34px !important;
+
+  flex: 0 0 34px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  border-radius: 50% !important;
+
+  background: #17b9ee !important;
+  color: #041018 !important;
+
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+.post-head strong {
+  display: block !important;
+
+  color: #edf5f8 !important;
+
+  font-size: 12px !important;
+}
+
+.post-head small {
+  display: block !important;
+
+  margin-top: 3px !important;
+
+  color: #728591 !important;
+
+  font-size: 9px !important;
+  text-transform: capitalize !important;
+}
+
+.class-post h3 {
+  margin: 0 0 7px !important;
+
+  color: #f2f7f9 !important;
+
+  font-size: 16px !important;
+}
+
+.class-post p {
+  margin: 0 !important;
+
+  color: #96a8b2 !important;
+
+  font-size: 11px !important;
+  line-height: 1.65 !important;
+}
+
+
+/* =========================================================
+   COLUMNA DRETA
+========================================================= */
+
+.classroom-info {
+  display: grid !important;
+  align-content: start !important;
+  gap: 12px !important;
+}
+
+.info-card {
+  padding: 17px !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #0d1923,
+      #0a141d
+    ) !important;
+
+  border: 1px solid #1c2e3b !important;
+  border-radius: 14px !important;
+}
+
+.info-card h3 {
+  margin: 0 0 15px !important;
+
+  color: #edf5f8 !important;
+
+  font-size: 12px !important;
+}
+
+.info-card p {
+  margin: 9px 0 !important;
+
+  color: #879aa5 !important;
+
+  font-size: 10px !important;
+  line-height: 1.5 !important;
+}
+
+.info-card p strong {
+  color: #c8d7de !important;
+}
+
+
+/* =========================================================
+   TREBALL DE CLASSE
+========================================================= */
+
+.work-card {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 14px !important;
+
+  padding: 17px !important;
+
+  background: #0d1923 !important;
+
+  border: 1px solid #1c2e3b !important;
+  border-radius: 14px !important;
+
+  transition:
+    transform .18s ease,
+    border-color .18s ease !important;
+}
+
+.work-card:hover {
+  transform: translateY(-1px) !important;
+  border-color: #294252 !important;
+}
+
+.work-icon {
+  width: 38px !important;
+  height: 38px !important;
+
+  flex: 0 0 38px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  border-radius: 10px !important;
+
+  background: rgba(23,185,238,.10) !important;
+  color: #28c0ed !important;
+
+  font-weight: 900 !important;
+}
+
+.work-card strong {
+  display: block !important;
+
+  color: #edf5f8 !important;
+
+  font-size: 12px !important;
+}
+
+.work-card small {
+  display: block !important;
+
+  margin-top: 4px !important;
+
+  color: #70838e !important;
+
+  font-size: 9px !important;
+}
+
+.work-card p {
+  color: #8ea1ac !important;
+  line-height: 1.5 !important;
+}
+
+
+/* =========================================================
+   PERSONES
+========================================================= */
+
+.person-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 11px !important;
+
+  padding: 9px 0 !important;
+
+  border-bottom: 1px solid rgba(255,255,255,.045) !important;
+}
+
+.person-row:last-child {
+  border-bottom: 0 !important;
+}
+
+.person-row strong {
+  display: block !important;
+
+  color: #eaf3f6 !important;
+
+  font-size: 11px !important;
+}
+
+.person-row small {
+  display: block !important;
+
+  margin-top: 3px !important;
+
+  color: #728591 !important;
+
+  font-size: 9px !important;
+}
+
+
+/* =========================================================
+   EMPTY STATES
+========================================================= */
+
+.empty-state {
+  min-height: 150px !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 30px !important;
+
+  text-align: center !important;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(23,185,238,.035),
+      transparent 65%
+    ) !important;
+
+  border: 1px dashed #243947 !important;
+  border-radius: 14px !important;
+}
+
+.empty-state strong {
+  color: #dce8ed !important;
+
+  font-size: 12px !important;
+}
+
+.empty-state small {
+  max-width: 390px !important;
+
+  margin-top: 7px !important;
+
+  color: #71838e !important;
+
+  font-size: 10px !important;
+  line-height: 1.5 !important;
+}
+
+
+/* =========================================================
+   MÒDALS — ACABAT FINAL
+========================================================= */
+
+.modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+
+  z-index: 9999 !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 20px !important;
+
+  background: rgba(2,7,11,.74) !important;
+
+  backdrop-filter: blur(7px) !important;
+  -webkit-backdrop-filter: blur(7px) !important;
+}
+
+.modal {
+  width: min(650px, calc(100vw - 32px)) !important;
+  max-height: calc(100vh - 40px) !important;
+  overflow: auto !important;
+
+  padding: 25px !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #101e29,
+      #0a141d
+    ) !important;
+
+  border: 1px solid #294252 !important;
+  border-radius: 17px !important;
+
+  box-shadow:
+    0 35px 90px rgba(0,0,0,.55) !important;
+}
+
+.modal-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+
+  padding-bottom: 17px !important;
+
+  border-bottom: 1px solid #1d303d !important;
+}
+
+.modal-header h2 {
+  margin: 0 !important;
+
+  color: #f5fafc !important;
+
+  font-size: 21px !important;
+  letter-spacing: -.035em !important;
+}
+
+.modal-close {
+  width: 34px !important;
+  height: 34px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  padding: 0 !important;
+
+  background: #12222e !important;
+  color: #b9cbd3 !important;
+
+  border: 1px solid #29404e !important;
+  border-radius: 9px !important;
+
+  font-size: 20px !important;
+}
+
+.modal-close:hover {
+  background: #1a303e !important;
+  color: white !important;
+}
+
+.modal-body {
+  padding: 20px 0 4px !important;
+}
+
+.modal-footer {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 9px !important;
+
+  padding-top: 20px !important;
+
+  border-top: 1px solid #1d303d !important;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
+  .classroom-body {
+    grid-template-columns: 1fr !important;
+  }
+
+  .classroom-info {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+  }
+
+  .classroom-cover {
+    min-height: 210px !important;
+  }
+}
+
+@media (max-width: 650px) {
+  .class-grid-large {
+    grid-template-columns: 1fr !important;
+  }
+
+  .classroom-cover {
+    min-height: 220px !important;
+    padding: 22px !important;
+  }
+
+  .classroom-cover-content h1 {
+    font-size: 35px !important;
+  }
+
+  .classroom-tabs {
+    overflow-x: auto !important;
+  }
+
+  .classroom-tab {
+    flex: 0 0 auto !important;
+    padding: 0 12px !important;
+  }
+
+  .classroom-info {
+    grid-template-columns: 1fr !important;
+  }
+
+  .modal {
+    width: calc(100vw - 22px) !important;
+    padding: 19px !important;
+  }
+}
