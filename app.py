@@ -580,10 +580,18 @@ def register():
             ),
         ), 400
 
-    if role not in {
-        "alumne",
+    # La UI puede enviar "professor", pero Supabase usa "teacher"
+    # en la restricción users_role_check.
+    role = str(role).strip().lower()
+    if role in {
         "professor",
+        "professor/a",
+        "profesor",
+        "profesora",
+        "teacher",
     }:
+        role = "teacher"
+    else:
         role = "alumne"
 
     try:
