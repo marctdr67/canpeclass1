@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#071019">
+  <meta name="description" content="MiniClassroom — organització, classes i estudi amb IA.">
+  <title>MiniClassroom · Institut Can Peixauet</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="app-booting">
+
+<div id="toast-root" aria-live="polite"></div>
+
+<!-- AUTH -->
+<section id="auth-view" class="auth-page" aria-label="Autenticació">
+  <div class="auth-visual">
+    <div class="auth-visual-overlay"></div>
+    <div class="auth-visual-copy">
+      <img src="/static/logo-canpeixauet.png" alt="Institut Can Peixauet">
+      <span>INSTITUT CAN PEIXAUET</span>
+      <h1>Aprèn.<br><strong>Organitza't.</strong></h1>
+      <p>Una aula digital per tenir les tasques, els exàmens, les classes i l'estudi en un sol lloc.</p>
+    </div>
+  </div>
+  <div class="auth-side">
+    <div class="auth-card">
+      <div class="auth-brand-mobile">
+        <img src="/static/logo-canpeixauet.png" alt="Institut Can Peixauet">
+        <div><strong>MiniClassroom</strong><small>Institut Can Peixauet</small></div>
+      </div>
+      <div class="eyebrow">MINICLASSROOM</div>
+      <h2>Benvingut/da</h2>
+      <p class="auth-subtitle">Entra al teu espai d'aprenentatge.</p>
+
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab active" data-auth="login">Iniciar sessió</button>
+        <button type="button" class="auth-tab" data-auth="register">Crear compte</button>
+      </div>
+
+      <form id="login-form" class="auth-form" autocomplete="on">
+        <label>Correu electrònic<input name="email" type="email" autocomplete="email" placeholder="tu@exemple.cat" required></label>
+        <label>Contrasenya<input name="password" type="password" autocomplete="current-password" placeholder="••••••••" required></label>
+        <button class="btn btn-yellow wide" type="submit">Iniciar sessió <span>→</span></button>
+      </form>
+
+      <form id="register-form" class="auth-form hidden" autocomplete="on">
+        <label>Nom<input name="name" autocomplete="name" placeholder="El teu nom" required></label>
+        <label>Correu electrònic<input name="email" type="email" autocomplete="email" placeholder="tu@exemple.cat" required></label>
+        <label>Contrasenya<input name="password" type="password" autocomplete="new-password" minlength="6" placeholder="Mínim 6 caràcters" required></label>
+        <label>Soc...<select name="role"><option value="alumne">Alumne</option><option value="professor">Professor</option></select></label>
+        <button class="btn btn-yellow wide" type="submit">Crear compte <span>→</span></button>
+      </form>
+      <p id="auth-message" class="auth-message" aria-live="polite"></p>
+      <p class="auth-footnote">Les contrasenyes es guarden amb hash segur.</p>
+    </div>
+  </div>
+</section>
+
+<!-- APP -->
+<div id="app-view" class="app-shell hidden">
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="/static/logo-canpeixauet.png" alt="Can Peixauet">
+      <div><strong>MiniClassroom</strong><small>Institut Can Peixauet</small></div>
+    </div>
+
+    <div class="sidebar-user">
+      <span id="side-avatar" class="avatar">F</span>
+      <div><strong id="side-name">Usuari</strong><small id="side-role">Alumne</small></div>
+    </div>
+
+    <nav class="nav" aria-label="Navegació principal">
+      <button class="nav-item active" data-section="dashboard"><span>⌂</span>Inici</button>
+      <button class="nav-item" data-section="calendar"><span>□</span>Calendari</button>
+      <button class="nav-item" data-section="tasks"><span>✓</span>Tasques</button>
+      <button class="nav-item" data-section="exams"><span>▣</span>Exàmens</button>
+      <button class="nav-item" data-section="planner"><span>◫</span>Planificador</button>
+      <button class="nav-item" data-section="classes"><span>▤</span>Classes</button>
+      <button class="nav-item" data-section="ai"><span>✦</span>IA d'estudi</button>
+      <button class="nav-item" data-section="progress"><span>◌</span>Progrés</button>
+      <button class="nav-item" data-section="profile"><span>○</span>Perfil</button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="ai-status"><i></i><div><strong>IA preparada</strong><small>Disponible per ajudar-te</small></div></div>
+      <button id="logout-btn" class="logout-btn" type="button">↪ Tancar sessió</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button id="mobile-menu" class="icon-button mobile-only" type="button" aria-label="Obrir menú">☰</button>
+      <div class="search-box"><span>⌕</span><input id="global-search" type="search" placeholder="Cerca tasques, exàmens, classes..."><kbd>⌘ K</kbd></div>
+      <div class="top-actions">
+        <button id="quick-ai" class="icon-button" type="button" title="IA">✦</button>
+        <button id="notification-btn" class="icon-button" type="button" title="Notificacions">♧<i id="notification-dot"></i></button>
+        <button id="quick-add" class="btn btn-yellow top-add" type="button">+ Afegir</button>
+        <button id="profile-chip" class="profile-chip" data-section="profile" type="button"><span id="top-avatar" class="avatar small">F</span><span><strong id="top-name">Usuari</strong><small id="top-role">Alumne</small></span><b>⌄</b></button>
+      </div>
+      <div id="notification-panel" class="popover hidden"></div>
+    </header>
+
+    <div class="content">
+      <!-- DASHBOARD -->
+      <section id="section-dashboard" class="section active">
+        <div class="dashboard-layout">
+          <div class="dashboard-main">
+            <div class="hero-banner">
+              <img src="/static/canpeixauet.jpg" alt="Institut Can Peixauet">
+              <div class="hero-overlay"></div>
+              <div class="hero-copy">
+                <div class="eyebrow light">INSTITUT CAN PEIXAUET</div>
+                <h1 id="greeting">El teu estudi,<br><span>clar i al teu ritme.</span></h1>
+                <p>Organitza't, aprèn i avança amb l'ajuda de la intel·ligència artificial.</p>
+              </div>
+            </div>
+
+            <div class="stats-grid">
+              <button class="stat-card" data-section="tasks"><span class="stat-icon blue">✓</span><div><small>Tasques pendents</small><strong id="stat-pending">0</strong><em id="stat-pending-sub">0 completes</em></div><b>›</b></button>
+              <button class="stat-card" data-section="exams"><span class="stat-icon red">▣</span><div><small>Exàmens propers</small><strong id="stat-exams">0</strong><em>Properes dates</em></div><b>›</b></button>
+              <button class="stat-card" data-section="progress"><span class="stat-icon yellow">▥</span><div><small>Progrés setmanal</small><strong id="stat-progress">0%</strong><em id="stat-study">0 min</em></div><b>›</b></button>
+              <button class="stat-card" data-section="tasks"><span class="stat-icon gray">⌁</span><div><small>Tasques urgents</small><strong id="stat-urgent">0</strong><em>Pròxims 2 dies</em></div><b>›</b></button>
+            </div>
+
+            <div class="panel dashboard-classes-panel">
+              <div class="panel-head"><div><div class="eyebrow">APRENENTATGE</div><h2>Classes</h2></div><button class="link-button" data-section="classes" type="button">Veure totes →</button></div>
+              <div id="dashboard-classes" class="class-grid"></div>
+            </div>
+
+            <div id="recommendation-box" class="panel recommendation-panel">
+              <div class="panel-head"><div><div class="eyebrow">IA</div><h2>Què estudiar ara?</h2></div><button id="recalc-ai" class="link-button" type="button">Recalcular →</button></div>
+              <div id="recommendations-list" class="recommendations-list"></div>
+            </div>
+          </div>
+
+          <aside class="dashboard-side">
+            <div class="panel side-panel"><div class="panel-head"><div><div class="eyebrow">AVUI</div><h2>Avui</h2></div><button class="link-button" data-section="calendar" type="button">Calendari →</button></div><div id="agenda-list" class="compact-list"></div></div>
+            <div class="panel side-panel"><div class="panel-head"><div><div class="eyebrow">ENTREGUES</div><h2>S'entrega aviat</h2></div><button class="link-button" data-section="tasks" type="button">Veure →</button></div><div id="due-list" class="compact-list"></div></div>
+            <div class="panel side-panel"><div class="panel-head"><div><div class="eyebrow">IA</div><h2>Eines d'aprenentatge</h2></div></div><div class="learning-tools"><button class="tool-row" data-ai-tool="EXPLICAR" type="button"><span>+</span><div><b>Explica'm un tema</b><small>Entén-lo pas a pas.</small></div>→</button><button class="tool-row" data-ai-tool="TEST" type="button"><span>✓</span><div><b>Practica amb un test</b><small>5 preguntes amb correcció.</small></div>→</button><button class="tool-row" id="open-reco" type="button"><span>▥</span><div><b>Què estudiar ara?</b><small>Prioritza la feina.</small></div>→</button></div></div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- CALENDAR -->
+      <section id="section-calendar" class="section">
+        <div class="section-title"><div><div class="eyebrow">ORGANITZACIÓ</div><h1>Calendari</h1><p>Una vista clara de tasques i exàmens.</p></div><div class="toolbar-actions"><button id="calendar-prev" class="btn btn-outline" type="button">←</button><strong id="calendar-month"></strong><button id="calendar-next" class="btn btn-outline" type="button">→</button></div></div>
+        <div class="panel calendar-panel"><div class="calendar-weekdays"><span>Dl</span><span>Dt</span><span>Dc</span><span>Dj</span><span>Dv</span><span>Ds</span><span>Dg</span></div><div id="calendar-grid" class="calendar-grid"></div></div>
+      </section>
+
+      <!-- TASKS -->
+      <section id="section-tasks" class="section">
+        <div class="section-title"><div><div class="eyebrow">ORGANITZACIÓ</div><h1>Tasques</h1><p>Crea, prioritza i completa el que tens pendent.</p></div><button id="new-task" class="btn btn-yellow" type="button">+ Nova tasca</button></div>
+        <div class="toolbar"><div class="segmented"><button class="active" data-task-filter="totes" type="button">Totes</button><button data-task-filter="pendents" type="button">Pendents</button><button data-task-filter="proces" type="button">En procés</button><button data-task-filter="completades" type="button">Completades</button></div><input id="task-search" class="search-input" type="search" placeholder="Cerca una tasca..."></div>
+        <div id="tasks-list" class="item-list"></div>
+      </section>
+
+      <!-- EXAMS -->
+      <section id="section-exams" class="section">
+        <div class="section-title"><div><div class="eyebrow">PREPARACIÓ</div><h1>Exàmens</h1><p>Controla les dates i planifica el temps d'estudi.</p></div><button id="new-exam" class="btn btn-yellow" type="button">+ Nou examen</button></div>
+        <div id="exams-list" class="exam-grid"></div>
+      </section>
+
+      <!-- PLANNER -->
+      <section id="section-planner" class="section">
+        <div class="section-title"><div><div class="eyebrow">RITME</div><h1>Planificador</h1><p>Combina tasques, exàmens i sessions d'estudi.</p></div><button id="generate-plan" class="btn btn-yellow" type="button">✦ Generar pla amb IA</button></div>
+        <div class="planner-layout"><div class="panel planner-main"><div class="planner-head"><button id="prev-week" class="btn btn-outline" type="button">←</button><strong id="planner-week-label">Aquesta setmana</strong><button id="next-week" class="btn btn-outline" type="button">→</button></div><div id="week-grid" class="week-grid"></div></div><aside class="panel planner-side"><div class="panel-head"><div><div class="eyebrow">SESSIONS</div><h2>Estudi</h2></div><button id="add-session" class="link-button" type="button">+ Afegir</button></div><div id="plan-sessions" class="compact-list"></div></aside></div>
+      </section>
+
+      <!-- CLASSES -->
+      <section id="section-classes" class="section">
+        <div id="classes-list-view">
+          <div class="section-title"><div><div class="eyebrow">AULA</div><h1>Classes</h1><p>Les teves aules, el teu treball i la teva comunitat.</p></div><div id="class-actions" class="toolbar-actions"></div></div>
+          <div id="classes-list" class="class-grid class-grid-large"></div>
+        </div>
+        <div id="class-detail" class="hidden"></div>
+      </section>
+
+      <!-- AI -->
+      <section id="section-ai" class="section">
+        <div class="section-title"><div><div class="eyebrow">ASSISTENT</div><h1>IA d'estudi</h1><p>Una IA que coneix les teves tasques i exàmens.</p></div><span class="ai-badge">✦ Català</span></div>
+        <div class="ai-layout">
+          <div class="panel chat-panel">
+            <div id="ai-modes" class="ai-modes"><button class="active" data-ai-mode="DUBTE" type="button">Dubte</button><button data-ai-mode="EXPLICAR" type="button">Explicar</button><button data-ai-mode="ESTUDIAR" type="button">Estudiar</button><button data-ai-mode="RESUMIR" type="button">Resumir</button><button data-ai-mode="TEST" type="button">Test</button></div>
+            <div id="ai-messages" class="chat-log"><div class="chat-bubble ai"><span>✦</span><div><b>MiniClassroom IA</b><p>Hola! Puc ajudar-te amb una assignatura, una tasca, un examen o la teva planificació.</p></div></div></div>
+            <form id="ai-form" class="chat-form"><textarea id="ai-input" rows="1" placeholder="Escriu una pregunta..."></textarea><button class="send-btn" type="submit">↑</button></form>
+          </div>
+          <aside class="ai-tools"><button id="open-test" class="tool-card" type="button"><span>✓</span><div><b>Crear un test</b><small>5 preguntes i correcció.</small></div>→</button><button id="open-reco-ai" class="tool-card" type="button"><span>▥</span><div><b>Prioritzar la feina</b><small>Analitza tasques i exàmens.</small></div>→</button><div class="panel ai-note"><div class="eyebrow">APRENENTATGE</div><h3>La IA t'ajuda a estudiar</h3><p>Demana explicacions, exemples, pistes i preguntes. No només respostes.</p></div></aside>
+        </div>
+      </section>
+
+      <!-- PROGRESS -->
+      <section id="section-progress" class="section">
+        <div class="section-title"><div><div class="eyebrow">EVOLUCIÓ</div><h1>Progrés</h1><p>Entén el teu ritme d'estudi.</p></div></div>
+        <div class="progress-grid"><div class="panel progress-hero"><span class="progress-ring" id="progress-ring"><strong id="progress-number">0%</strong></span><div><div class="eyebrow">TASQUES</div><h2>Progrés general</h2><p id="progress-copy">Encara no hi ha prou dades.</p></div></div><div class="panel progress-stat"><small>Tasques completades</small><strong id="progress-tasks">0 / 0</strong></div><div class="panel progress-stat"><small>Temps d'estudi</small><strong id="progress-study">0 min</strong></div><div class="panel progress-stat"><small>Mitjana dels tests</small><strong id="progress-tests">0%</strong></div></div>
+        <div class="progress-columns"><div class="panel"><div class="panel-head"><div><div class="eyebrow">SETMANA</div><h2>Temps d'estudi</h2></div></div><div id="progress-chart" class="progress-chart"></div></div><div class="panel"><div class="panel-head"><div><div class="eyebrow">TESTS</div><h2>Historial</h2></div></div><div id="test-history" class="compact-list"></div></div></div>
+      </section>
+
+      <!-- PROFILE -->
+      <section id="section-profile" class="section">
+        <div class="section-title"><div><div class="eyebrow">COMPTE</div><h1>Perfil</h1><p>Gestiona la informació del teu compte.</p></div></div>
+        <div class="profile-layout"><div class="panel profile-card"><span id="profile-avatar" class="profile-avatar">F</span><h2 id="profile-name">Usuari</h2><p id="profile-email">—</p><span id="profile-role" class="role-pill">Alumne</span></div><div class="panel"><form id="profile-form" class="form-grid"><label>Nom<input id="profile-name-input" name="name" required></label><div class="account-email"><span>Correu electrònic</span><strong id="profile-email-readonly">—</strong><small>El correu s'utilitza per iniciar sessió i no es pot modificar des de l'aplicació.</small></div><div class="form-actions"><button class="btn btn-yellow" type="submit">Guardar canvis</button></div></form></div></div>
+        <div class="panel security-note"><div class="eyebrow">EXPERIMENT DEL TdR</div><h3>Registre no invasiu</h3><p>MiniClassroom pot registrar accions acadèmiques bàsiques per analitzar l'ús de les recomanacions d'IA dins del projecte de recerca.</p></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div id="modal-root"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
