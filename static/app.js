@@ -263,6 +263,12 @@ function setUser(user) {
         ? "Professor"
         : "Alumne";
 
+  if ($("#top-role"))
+    $("#top-role").textContent =
+      isTeacherRole(user.role)
+        ? "Professor"
+        : "Alumne";
+
   if ($("#profile-avatar"))
     $("#profile-avatar").textContent =
       initials(name);
