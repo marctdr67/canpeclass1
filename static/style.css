@@ -39,3 +39,302 @@
 @media(max-width:1200px){.dashboard-layout{grid-template-columns:1fr}.dashboard-side{grid-template-columns:repeat(3,1fr)}.ai-layout{grid-template-columns:1fr}.ai-tools{grid-template-columns:repeat(3,1fr)}.progress-grid{grid-template-columns:1.5fr repeat(3,1fr)}}
 @media(max-width:900px){:root{--sidebar:0px}.sidebar{transform:translateX(-100%);transition:transform var(--ease);width:250px}.sidebar.open{transform:translateX(0)}.main{margin-left:0;width:100%}.mobile-only{display:grid}.topbar{padding:0 12px}.search-box{width:auto;flex:1}.top-add{display:none}.content{padding:16px}.dashboard-side{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.planner-layout,.classroom-body,.progress-columns,.profile-layout{grid-template-columns:1fr}.week-grid{overflow:auto;grid-template-columns:repeat(7,150px)}.auth-page{grid-template-columns:1fr}.auth-visual{display:none}.auth-side{min-height:100vh}.auth-brand-mobile{display:flex;align-items:center;gap:10px;margin-bottom:28px}.auth-brand-mobile img{width:40px;height:40px;background:#fff;border-radius:9px;padding:4px}.auth-brand-mobile strong{display:block}.auth-brand-mobile small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.ai-tools{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}}
 @media(max-width:620px){.section-title{align-items:flex-start;flex-direction:column}.hero-banner{height:330px}.hero-copy{left:20px;right:20px;bottom:20px}.hero-copy h1{font-size:39px}.stats-grid{grid-template-columns:1fr 1fr}.calendar-cell{min-height:90px;padding:6px}.calendar-event{font-size:7px}.class-grid,.class-grid-large{grid-template-columns:1fr}.search-box kbd{display:none}.profile-chip span:nth-child(2),.profile-chip>b{display:none}.top-actions{gap:5px}.content{padding:12px}.auth-side{padding:24px}.auth-card h2{font-size:30px}.item-row{grid-template-columns:6px minmax(0,1fr)}.row-actions{grid-column:2}.progress-hero{flex-direction:column;align-items:flex-start}.progress-chart{height:210px}}
+
+/* =========================================================
+   MINIClassroom — ACABADO VISUAL DE MODALS
+   Només estètica. No modifica cap funcionalitat.
+========================================================= */
+
+.modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 24px !important;
+
+  background: rgba(3, 8, 14, 0.72) !important;
+  backdrop-filter: blur(5px) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
+}
+
+.modal {
+  width: min(680px, calc(100vw - 40px)) !important;
+  max-height: calc(100vh - 48px) !important;
+  overflow-y: auto !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #101b26 0%,
+      #0b151f 100%
+    ) !important;
+
+  border: 1px solid rgba(90, 180, 220, 0.22) !important;
+  border-radius: 18px !important;
+
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.025) !important;
+
+  padding: 26px !important;
+
+  color: #f5f8fa !important;
+}
+
+.modal-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 18px !important;
+
+  margin-bottom: 22px !important;
+}
+
+.modal-head h2,
+.modal-head h3,
+.modal h2,
+.modal h3 {
+  margin: 0 !important;
+
+  color: #f7fafc !important;
+
+  font-size: 21px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* Botó X */
+
+.modal .close,
+.modal-head .close {
+  width: 34px !important;
+  height: 34px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 0 !important;
+
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 9px !important;
+
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: #cbd5dc !important;
+
+  font-size: 22px !important;
+  line-height: 1 !important;
+
+  cursor: pointer !important;
+
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease !important;
+}
+
+.modal .close:hover,
+.modal-head .close:hover {
+  background: rgba(255, 255, 255, 0.11) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.20) !important;
+  transform: scale(1.04) !important;
+}
+
+/* Camps del formulari */
+
+.modal label {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+
+  color: #d7e0e6 !important;
+
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.modal input,
+.modal select,
+.modal textarea {
+  width: 100% !important;
+  box-sizing: border-box !important;
+
+  min-height: 44px !important;
+
+  padding: 11px 13px !important;
+
+  border: 1px solid rgba(140, 180, 205, 0.18) !important;
+  border-radius: 10px !important;
+
+  background: #0a141e !important;
+  color: #f3f7f9 !important;
+
+  outline: none !important;
+
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease !important;
+}
+
+.modal input::placeholder,
+.modal textarea::placeholder {
+  color: #71808c !important;
+}
+
+.modal input:focus,
+.modal select:focus,
+.modal textarea:focus {
+  border-color: #20b8ee !important;
+
+  box-shadow:
+    0 0 0 3px rgba(32, 184, 238, 0.12) !important;
+
+  background: #0c1823 !important;
+}
+
+/* Text d'ajuda */
+
+.modal small,
+.modal .help-text {
+  color: #83929e !important;
+  font-size: 11px !important;
+  line-height: 1.45 !important;
+}
+
+/* Zona inferior */
+
+.modal-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+
+  margin-top: 24px !important;
+}
+
+/* Botons */
+
+.modal .btn {
+  min-height: 42px !important;
+
+  padding: 10px 17px !important;
+
+  border-radius: 10px !important;
+
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+
+  font-weight: 650 !important;
+  font-size: 13px !important;
+
+  cursor: pointer !important;
+
+  transition:
+    transform 0.16s ease,
+    background 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease !important;
+}
+
+.modal .btn:hover {
+  transform: translateY(-1px) !important;
+}
+
+/* Cancel·lar */
+
+.modal .btn:not(.primary):not(.btn-primary):not(.btn-yellow):not(.btn-blue) {
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: #dce5ea !important;
+}
+
+.modal .btn:not(.primary):not(.btn-primary):not(.btn-yellow):not(.btn-blue):hover {
+  background: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* Botó principal */
+
+.modal .btn.primary,
+.modal .btn.btn-primary,
+.modal .btn.btn-yellow {
+  background: #ffd400 !important;
+  color: #071018 !important;
+
+  border-color: #ffd400 !important;
+
+  box-shadow:
+    0 8px 24px rgba(255, 212, 0, 0.16) !important;
+}
+
+.modal .btn.primary:hover,
+.modal .btn.btn-primary:hover,
+.modal .btn.btn-yellow:hover {
+  background: #ffe044 !important;
+  border-color: #ffe044 !important;
+
+  box-shadow:
+    0 10px 28px rgba(255, 212, 0, 0.23) !important;
+}
+
+/* Si el botó està disabled, que només ho estigui
+   visualment quan realment ho sigui */
+
+.modal .btn:disabled {
+  opacity: 0.48 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Formularis amb dues columnes */
+
+.modal .form-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+}
+
+.modal .form-grid > label:first-child:last-child {
+  grid-column: 1 / -1 !important;
+}
+
+/* Modal petit com "Crear una classe" */
+
+.modal form {
+  width: 100% !important;
+}
+
+/* Responsive */
+
+@media (max-width: 700px) {
+  .modal-backdrop {
+    padding: 14px !important;
+    align-items: flex-end !important;
+  }
+
+  .modal {
+    width: 100% !important;
+    max-height: calc(100vh - 28px) !important;
+
+    border-radius: 18px 18px 12px 12px !important;
+    padding: 20px !important;
+  }
+
+  .modal .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+  }
+
+  .modal-actions .btn {
+    width: 100% !important;
+  }
+}
