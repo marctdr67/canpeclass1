@@ -329,9 +329,7 @@ def teacher_required(fn):
                 error="Has d'iniciar sessió."
             ), 401
 
-        role = str(
-            user.get("role", "")
-        ).strip().lower()
+        role = str(user.get("role", "")).strip().lower()
 
         if role not in {"teacher", "professor"}:
             return jsonify(
@@ -1673,16 +1671,14 @@ def classes_create():
             INSERT INTO classes
             (
                 name,
-                subject,
                 code,
                 teacher_id
             )
-            VALUES (%s,%s,%s,%s)
+            VALUES (%s,%s,%s)
             RETURNING *
             """,
             (
                 name,
-                subject,
                 code,
                 session["user_id"],
             ),
