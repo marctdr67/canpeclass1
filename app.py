@@ -446,7 +446,7 @@ def get_user_classes(user_id):
     if not user:
         return []
 
-    if user["role"] == "professor":
+    if str(user["role"]).strip().lower() in {"teacher", "professor"}:
         rows = db_query(
             """
             SELECT
