@@ -329,7 +329,11 @@ def teacher_required(fn):
                 error="Has d'iniciar sessió."
             ), 401
 
-        if user["role"] != "professor":
+        role = str(
+            user.get("role", "")
+        ).strip().lower()
+
+        if role not in {"teacher", "professor"}:
             return jsonify(
                 ok=False,
                 error=(
@@ -580,18 +584,10 @@ def register():
             ),
         ), 400
 
-    # La UI puede enviar "professor", pero Supabase usa "teacher"
-    # en la restricción users_role_check.
-    role = str(role).strip().lower()
-    if role in {
+    if role not in {
+        "alumne",
         "professor",
-        "professor/a",
-        "profesor",
-        "profesora",
-        "teacher",
     }:
-        role = "teacher"
-    else:
         role = "alumne"
 
     try:
