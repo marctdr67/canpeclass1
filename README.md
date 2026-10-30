@@ -28,7 +28,9 @@ No posis cap clau ni contrasenya dins del codi o GitHub.
 
 ## Important amb Supabase
 
-Aquesta versió està preparada per a l'esquema existent de MiniClassroom. No cal esborrar ni recrear les taules `users`, `classes`, `class_students`, `tasks`, `exams`, `class_content`, `study_sessions`, `test_results` o `activity_log`.
+El registre públic crea comptes amb el rol `student`; el rol `teacher` s'assigna des de l'administració.
+
+Per actualitzar una base de dades existent, executa una vegada `fix_supabase_schema.sql` des de Supabase → SQL Editor. La migració només afegeix `study_sessions.exam_id` i `test_results.subject`; no elimina ni recrea dades.
 
 La taula `class_materials` és l'única taula auxiliar que l'aplicació crea automàticament si no existeix.
 

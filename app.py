@@ -617,7 +617,8 @@ def register():
 
     # El registre públic només crea comptes d'alumne. Els comptes de
     # professor s'han de provisionar per una persona administradora.
-    role = "alumne"
+    # La restricció actual de Supabase només admet `student` i `teacher`.
+    role = "student"
 
     if not name or not email or not password:
         return jsonify(
@@ -698,7 +699,7 @@ def register():
     except Exception as exc:
         print(
             "REGISTER ERROR:",
-            repr(exc),
+            type(exc).__name__,
         )
 
         return jsonify(
